@@ -42,8 +42,18 @@ https://<user>.github.io/kuma_radio/overlay.html?channel=<channel>&users=<name1>
 - ☐ **Refresh browser when scene becomes active** — leave unchecked; it would drop the connection on
   every scene switch.
 
-Put it in a scene that's always live. Nothing is drawn except small toasts in the bottom-left, and
-the background is transparent.
+**4. Turn on monitoring, or the streamer won't hear it.** "Control audio via OBS" sends the audio to
+the *stream* but defaults to **Monitor Off**, so viewers hear the sounds and the streamer doesn't.
+Audio Mixer → ⋮ on the source → **Advanced Audio Properties** → **Audio Monitoring** → **Monitor and
+Output**. If it's still silent, check Settings → Audio → Advanced → **Monitoring Device** points at
+the right output.
+
+If the streamer also captures Desktop Audio from the device they monitor to, "Monitor and Output"
+can put the sound on stream twice, heard as an echo. In that case use **Monitor Only** and let the
+Desktop Audio capture carry it to stream.
+
+Put the source in a scene that's always live. Nothing is drawn except small toasts in the
+bottom-left, and the background is transparent.
 
 ## Commands
 
