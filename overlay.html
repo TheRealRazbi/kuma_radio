@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>kuma radio — sfx overlay</title>
+<style>
+  html,body{margin:0;padding:0;background:transparent;overflow:hidden;
+    font:14px/1.4 "Segoe UI",system-ui,sans-serif;color:#fff;
+    -webkit-user-select:none;user-select:none;}
+  #toasts{position:fixed;left:12px;bottom:12px;display:flex;flex-direction:column-reverse;gap:6px;max-width:520px}
+  .toast{background:rgba(12,12,16,.82);border-left:3px solid #9147ff;border-radius:4px;
+    padding:7px 11px;text-shadow:0 1px 2px #000;opacity:0;transform:translateX(-8px);
+    transition:opacity .18s,transform .18s;word-break:break-all}
+  .toast.in{opacity:1;transform:none}
+  .toast.err{border-left-color:#e0503f}
+  .toast.ok{border-left-color:#3fb950}
+  .toast .who{color:#b98cff;font-weight:600}
+  #status{position:fixed;right:12px;top:12px;background:rgba(12,12,16,.86);border-radius:5px;
+    padding:9px 12px;font:12px/1.6 ui-monospace,Consolas,monospace;white-space:pre;display:none}
+  #status.on{display:block}
+  #status b{color:#b98cff;font-weight:600}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#e0503f;margin-right:6px}
+  .dot.live{background:#3fb950}
+  #arm{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;
+    justify-content:center;font-size:20px;cursor:pointer}
+  #arm.on{display:flex}
+</style>
+</head>
+<body>
+<div id="toasts"></div>
+<div id="status"></div>
+<div id="arm">&#128266; click to enable audio</div>
+<script>
+"use strict";
+
+/* ---------------- config (all via query string) ---------------- */
+const Q = new URLSearchParams(location.search);
+const num = (k, d) => { const v = parseFloat(Q.get(k)); return Number.isFinite(v) ? v : d; };
+const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+
+const CFG = {
+  channel:   (Q.get('channel') || '').toLowerCase().replace(/^#/, ''),
+  users:     (Q.get('users') || '').toLowerCase().split(',').map(s => s.trim()).filter(Boolean),
+  allowMods: Q.get('mods') === '1',
+  prefix:    (Q.get('prefix') || '!sfx').toLowerCase(),
+  vol:       clamp(num('vol', 50), 0, 100),
+  maxlen:    clamp(num('maxlen', 15), 0.5, 300),
+  cooldown:  clamp(num('cooldown', 3), 0, 120),
+  queueMax:  clamp(num('queue', 5), 1, 50),
+  overlap:   Q.get('overlap') === '1',
+  quiet:     Q.get('quiet') === '1',
+  debug:     Q.get('debug') === '1'
+};
+
+const AUDIO_EXT = /\.(mp3|ogg|oga|opus|wav|m4a|aac|flac|webm|weba)(\/|$)/i;
+const EXT_TAIL  = /(\.(?:mp3|ogg|oga|opus|wav|m4a|aac|flac|webm|weba))\/.*$/i;
+const VOL_KEY = 'kuma-sfx-vol:' + CFG.channel;
+
+let volume = CFG.vol;
+try {
+  const saved = localStorage.getItem(VOL_KEY);
+  if (saved !== null) volume = clamp(parseFloat(saved), 0, 100);
+} catch (e) { /* private mode / restricted storage can throw */ }
+
+/* ---------------- ui ---------------- */
+const $toasts = document.getElementById('toasts');
+const $status = document.getElementById('status');
+const $arm    = document.getElementById('arm');
+if (CFG.debug) $status.classList.add('on');
+
+let lastEvent = '—', connState = 'connecting';
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+}
+
+function toast(html, kind) {
+  if (CFG.quiet) return;
+  const el = document.createElement('div');
+  el.className = 'toast' + (kind ? ' ' + kind : '');
+  el.innerHTML = html;
+  $toasts.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('in'));
+  setTimeout(() => {
+    el.classList.remove('in');
+    setTimeout(() => el.remove(), 250);
+  }, 4200);
+  while ($toasts.children.length > 6) $toasts.firstChild.remove();
+}
+
+function drawStatus() {
+  if (!CFG.debug) return;
+  $status.innerHTML =
+    '<span class="dot' + (connState === 'live' ? ' live' : '') + '"></span><b>kuma radio</b>  ' + esc(connState) + '\n' +
+    'channel   #' + esc(CFG.channel || '(none!)') + '\n' +
+    'allowed   ' + esc(CFG.users.join(', ') || '(none!)') + (CFG.allowMods ? ' +mods' : '') + '\n' +
+    'volume    ' + Math.round(volume) + '%\n' +
+    'queue     ' + queue.length + '/' + CFG.queueMax + (playing ? ' (playing)' : '') + '\n' +
+    'last      ' + esc(lastEvent);
+}
+
+/* ---------------- audio ---------------- */
+const queue = [];
+let playing = null;
+
+function setVolume(v, announce) {
+  volume = clamp(v, 0, 100);
+  try { localStorage.setItem(VOL_KEY, String(volume)); } catch (e) {}
+  if (playing) playing.audio.volume = volume / 100;
+  if (announce) toast('volume &rarr; <b>' + Math.round(volume) + '%</b>', 'ok');
+  drawStatus();
+}
+
+function stopCurrent() {
+  if (!playing) return;
+  const cur = playing;
+  playing = null;
+  clearTimeout(cur.timer);
+  cur.audio.pause();
+  cur.done();
+}
+
+function playOne(item) {
+  return new Promise(resolve => {
+    const a = new Audio();
+    a.volume = volume / 100;
+    a.preload = 'auto';
+
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      if (playing && playing.audio === a) { clearTimeout(playing.timer); playing = null; }
+      drawStatus();
+      resolve();
+    };
+
+    a.addEventListener('ended', finish);
+    a.addEventListener('error', () => {
+      if (settled) return;                       // stopped on purpose, not a failure
+      toast('could not load <b>' + esc(item.label) + '</b>', 'err');
+      lastEvent = 'load failed: ' + item.label;
+      finish();
+    });
+
+    // hard stop, so nobody parks a 40-minute file on the stream
+    const timer = setTimeout(() => {
+      a.pause();
+      lastEvent = 'cut at ' + CFG.maxlen + 's';
+      finish();
+    }, CFG.maxlen * 1000);
+
+    playing = { audio: a, timer, done: finish };
+    a.src = item.url;
+
+    a.play().then(() => {
+      toast('<span class="who">' + esc(item.who) + '</span> &nbsp;' + esc(item.label));
+      lastEvent = item.who + ' -> ' + item.label;
+      drawStatus();
+    }).catch(err => {
+      if (settled) return;                       // pause() during load rejects with AbortError
+      if (err && err.name === 'NotAllowedError') {
+        $arm.classList.add('on');                // a normal browser tab needs a gesture; OBS does not
+        lastEvent = 'blocked by autoplay policy';
+      } else {
+        lastEvent = 'play failed: ' + (err && err.name);
+      }
+      clearTimeout(timer);
+      finish();
+    });
+  });
+}
+
+async function pump() {
+  if (playing || !queue.length) return;
+  await playOne(queue.shift());
+  drawStatus();
+  pump();
+}
+
+function enqueue(item) {
+  if (CFG.overlap) { playOne(item); return; }
+  if (queue.length >= CFG.queueMax) {
+    toast('queue is full, dropped one', 'err');
+    return;
+  }
+  queue.push(item);
+  drawStatus();
+  pump();
+}
+
+$arm.addEventListener('click', () => {
+  $arm.classList.remove('on');
+  new Audio().play().catch(() => {});
+  toast('audio enabled', 'ok');
+});
+
+/* ---------------- url resolution ---------------- */
+function firstUrl(text) {
+  const m = text.match(/https?:\/\/\S+/i);
+  return m ? m[0].replace(/[)\].,!?]+$/, '') : null;
+}
+
+function labelFor(u) {
+  try {
+    const parts = decodeURIComponent(new URL(u).pathname).split('/').filter(Boolean);
+    const i = parts.findIndex(s => AUDIO_EXT.test(s));
+    return i >= 0 ? parts[i] : (parts.pop() || u);
+  } catch (e) { return u; }
+}
+
+// Fandom "File:" pages are html, not audio. Ask the wiki api for the real file url.
+async function resolveFandom(u) {
+  const url = new URL(u);
+  const m = url.pathname.match(/\/wiki\/(?:File|Datei|Fichier|Archivo):(.+)$/i);
+  if (!m) return null;
+  const api = url.origin + '/api.php?action=query&format=json&origin=*'
+            + '&prop=imageinfo&iiprop=url&titles='
+            + encodeURIComponent('File:' + decodeURIComponent(m[1]));
+  const r = await fetch(api);
+  if (!r.ok) throw new Error('wiki api ' + r.status);
+  const j = await r.json();
+  const pages = (j.query && j.query.pages) || {};
+  for (const k in pages) {
+    const info = pages[k].imageinfo;
+    if (info && info[0] && info[0].url) return info[0].url;
+  }
+  return null;
+}
+
+// Wikia's cdn 404s audio at ".../Foo.ogg/revision/latest?cb=..." (that form only
+// works for images) but serves it fine at the bare ".../Foo.ogg". The wiki api hands
+// back the broken form, and so does copying a file link off the wiki, so trim it.
+function tidy(href) {
+  try {
+    const u = new URL(href);
+    if (/(^|\.)(nocookie\.net|wikia\.(?:com|org))$/i.test(u.hostname) && EXT_TAIL.test(u.pathname)) {
+      u.pathname = u.pathname.replace(EXT_TAIL, '$1');
+      u.search = '';
+    }
+    return u.href;
+  } catch (e) { return href; }
+}
+
+async function resolve(raw) {
+  let u;
+  try { u = new URL(raw); } catch (e) { return { err: 'that is not a url' }; }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return { err: 'unsupported link' };
+
+  // must come before the extension test: /wiki/File:Foo.ogg is an html page that
+  // happens to end in .ogg, and playing it directly gives you a decode error.
+  if (/(^|\.)(fandom\.com|wikia\.org)$/i.test(u.hostname) && /^\/wiki\//i.test(u.pathname)) {
+    try {
+      const direct = await resolveFandom(u.href);
+      if (direct) { const d = tidy(direct); return { url: d, label: labelFor(d) }; }
+      return { err: 'wiki has no file there' };
+    } catch (e) {
+      return { err: 'wiki lookup failed' };
+    }
+  }
+
+  if (AUDIO_EXT.test(u.pathname)) { const d = tidy(u.href); return { url: d, label: labelFor(d) }; }
+  return { err: 'need a direct audio link (.ogg/.mp3/.wav) or a wiki File: page' };
+}
+
+/* ---------------- permissions ---------------- */
+const lastUse = new Map();
+const isStaff = tags => tags.mod === '1' || /(^|,)broadcaster\//.test(tags.badges || '');
+
+function canPlay(user, tags)    { return CFG.users.includes(user) || (CFG.allowMods && isStaff(tags)); }
+function canControl(user, tags) { return canPlay(user, tags) || isStaff(tags); }
+
+/* ---------------- commands ---------------- */
+async function handle(user, tags, msg) {
+  const text = msg.trim();
+  if (!text.toLowerCase().startsWith(CFG.prefix)) return;
+  const rest = text.slice(CFG.prefix.length).trim();
+  const word = rest.split(/\s+/)[0].toLowerCase();
+
+  if (word === 'vol' || word === 'volume') {
+    if (!canControl(user, tags)) return;
+    const n = parseFloat(rest.split(/\s+/)[1]);
+    if (Number.isFinite(n)) setVolume(n, true);
+    else toast('volume is <b>' + Math.round(volume) + '%</b>', 'ok');
+    return;
+  }
+  if (word === 'stop' || word === 'skip') {
+    if (!canControl(user, tags)) return;
+    stopCurrent();
+    toast('stopped', 'ok');
+    lastEvent = user + ' -> stop';
+    drawStatus();
+    return;
+  }
+  if (word === 'clear') {
+    if (!canControl(user, tags)) return;
+    queue.length = 0;
+    stopCurrent();
+    toast('queue cleared', 'ok');
+    drawStatus();
+    return;
+  }
+
+  if (!canPlay(user, tags)) return;
+
+  const now = Date.now();
+  if (now - (lastUse.get(user) || 0) < CFG.cooldown * 1000) return;
+
+  const raw = firstUrl(rest);
+  if (!raw) return;
+  lastUse.set(user, now);
+
+  const res = await resolve(raw);
+  if (res.err) {
+    toast('<span class="who">' + esc(user) + '</span> ' + esc(res.err), 'err');
+    lastEvent = 'rejected: ' + res.err;
+    drawStatus();
+    return;
+  }
+  enqueue({ url: res.url, label: res.label, who: user });
+}
+
+/* ---------------- twitch irc (anonymous, read only) ---------------- */
+function parseTags(s) {
+  const out = {};
+  for (const kv of s.split(';')) {
+    const i = kv.indexOf('=');
+    if (i > 0) out[kv.slice(0, i)] = kv.slice(i + 1);
+  }
+  return out;
+}
+
+let ws = null, backoff = 1000;
+
+function connect() {
+  if (!CFG.channel) {
+    connState = 'no ?channel= given';
+    drawStatus();
+    toast('missing <b>?channel=</b> in the url', 'err');
+    return;
+  }
+  connState = 'connecting';
+  drawStatus();
+
+  ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
+
+  ws.onopen = () => {
+    ws.send('CAP REQ :twitch.tv/tags twitch.tv/commands');
+    ws.send('NICK justinfan' + (10000 + Math.floor(Math.random() * 80000)));
+    ws.send('JOIN #' + CFG.channel);
+  };
+
+  ws.onmessage = ev => {
+    for (const line of ev.data.split('\r\n')) {
+      if (!line) continue;
+      if (line.startsWith('PING')) { ws.send('PONG :tmi.twitch.tv'); continue; }
+
+      let rest = line, tags = {};
+      if (rest[0] === '@') {
+        const sp = rest.indexOf(' ');
+        tags = parseTags(rest.slice(1, sp));
+        rest = rest.slice(sp + 1);
+      }
+
+      const m = rest.match(/^:(\w+)!\w+@[\w.]+ PRIVMSG #\S+ :(.*)$/);
+      if (m) { handle(m[1].toLowerCase(), tags, m[2]); continue; }
+
+      if (/ (?:366|JOIN)\b/.test(rest) && connState !== 'live') {
+        connState = 'live';
+        backoff = 1000;
+        drawStatus();
+      }
+      if (/ RECONNECT\b/.test(rest)) ws.close();
+    }
+  };
+
+  ws.onclose = () => {
+    connState = 'reconnecting...';
+    drawStatus();
+    setTimeout(connect, backoff);
+    backoff = Math.min(backoff * 2, 15000);
+  };
+
+  ws.onerror = () => { try { ws.close(); } catch (e) {} };
+}
+
+drawStatus();
+connect();
+</script>
+</body>
+</html>
