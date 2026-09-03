@@ -84,6 +84,22 @@ obviously too short is the tell.
 Long clips are cut off at `maxlen` (15s by default). Plenty of wiki audio is longer than that —
 LoL recall music runs 10s and up — so raise it if things are getting clipped.
 
+## Custom sounds
+
+Not everything is on a wiki, and the overlay can't play YouTube or Spotify links — it needs a direct
+audio file. Drop your own into `sounds/` and GitHub Pages serves them alongside the overlay:
+
+```
+https://<user>.github.io/kuma_radio/sounds/braum-nu-pierde.ogg
+```
+
+Two rules for the filename: **no spaces** (use hyphens — a URL with spaces gets cut at the first
+one), and prefer **`.ogg`**, which decodes in every OBS build. To convert anything to Ogg:
+
+```bash
+ffmpeg -i input.mp3 -c:a libvorbis -q:a 5 sounds/output.ogg
+```
+
 Sounds play one at a time; extras wait in a queue. The volume set with `!sfx vol` is remembered
 across restarts, and a remembered value beats the `vol=` in the URL — so once it's been set from
 chat, keep changing it from chat. The OBS fader is independent of both and always wins.
