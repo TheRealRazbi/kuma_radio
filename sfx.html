@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>kuma radio — sfx finder</title>
+<style>
+  :root{--bg:#0e0e12;--panel:#16161d;--line:#26262f;--ink:#e9e9f0;--dim:#9a9aa8;
+        --accent:#9147ff;--accent-soft:#b98cff;--ok:#3fb950;--err:#e0503f}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.5 "Segoe UI",system-ui,sans-serif}
+  a{color:var(--accent-soft)}
+  header{padding:22px 20px 14px;border-bottom:1px solid var(--line)}
+  h1{margin:0;font-size:20px;font-weight:600}
+  h1 span{color:var(--accent-soft)}
+  header p{margin:6px 0 0;color:var(--dim);font-size:13px}
+  main{max-width:960px;margin:0 auto;padding:0 20px 60px}
+  nav{display:flex;flex-wrap:wrap;gap:8px;padding:16px 0}
+  nav button{background:var(--panel);color:var(--ink);border:1px solid var(--line);
+    border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;cursor:pointer}
+  nav button:hover{border-color:var(--accent)}
+  nav button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  nav button .n{color:var(--dim);margin-left:6px;font-size:12px}
+  nav button.on .n{color:#e2d5ff}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  input,select,button{font:inherit}
+  input[type=text],select{background:var(--panel);color:var(--ink);border:1px solid var(--line);
+    border-radius:6px;padding:8px 10px}
+  input[type=text]:focus,select:focus{outline:none;border-color:var(--accent)}
+  #q{flex:1 1 320px;min-width:220px}
+  select{max-width:210px}
+  .ghost{background:none;border:1px solid var(--line);color:var(--dim);border-radius:6px;
+    padding:8px 10px;cursor:pointer}
+  .ghost:hover{color:var(--ink);border-color:var(--accent)}
+  .bar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;
+    color:var(--dim);font-size:12px;padding:12px 0}
+  .bar label{display:flex;gap:6px;align-items:center;cursor:pointer}
+  .bar input[type=text]{padding:3px 6px;width:70px;font-size:12px}
+  #count{padding:4px 0 10px;color:var(--dim);font-size:13px}
+  ul{list-style:none;margin:0;padding:0}
+  li{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border-radius:8px;
+    border:1px solid transparent}
+  li:nth-child(odd){background:#12121a}
+  li.playing{border-color:var(--accent)}
+  .play{flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);
+    background:var(--panel);color:var(--accent-soft);cursor:pointer;font-size:13px}
+  .play:hover{border-color:var(--accent)}
+  li.playing .play{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .body{flex:1 1 auto;min-width:0}
+  .said{overflow-wrap:anywhere}
+  .said.none{color:var(--dim);font-style:italic}
+  .meta{color:var(--dim);font-size:12px;margin-top:3px;overflow-wrap:anywhere}
+  .meta b{color:var(--accent-soft);font-weight:600;cursor:pointer}
+  .meta b:hover{text-decoration:underline}
+  .copy{flex:0 0 auto;background:var(--panel);color:var(--ink);border:1px solid var(--line);
+    border-radius:6px;padding:7px 12px;cursor:pointer;font-size:13px}
+  .copy:hover{border-color:var(--accent)}
+  .copy.done{border-color:var(--ok);color:var(--ok)}
+  .copy.fail{border-color:var(--err);color:var(--err)}
+  #more{display:none;margin:14px auto 0;padding:9px 18px}
+  #note{padding:24px 0;color:var(--dim)}
+  footer{max-width:960px;margin:0 auto;padding:20px;border-top:1px solid var(--line);
+    color:var(--dim);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>kuma radio <span>sfx finder</span></h1>
+  <p>Search game voice lines by what is actually said, listen, then copy the chat command.</p>
+</header>
+
+<main>
+  <nav id="sources"></nav>
+
+  <div class="filters">
+    <input type="text" id="q" placeholder="search what's said — try: nobody touches the hat">
+    <select id="group"></select>
+    <select id="skin"></select>
+    <select id="cat"></select>
+    <button class="ghost" id="random" title="jump to a random line">surprise me</button>
+  </div>
+
+  <div class="bar">
+    <label>command <input type="text" id="prefix" value="!sfx" spellcheck="false"></label>
+    <label><input type="checkbox" id="urlonly"> copy the link only</label>
+    <label>preview volume <input type="range" id="vol" min="0" max="100" step="5"></label>
+    <span id="built"></span>
+  </div>
+
+  <div id="count"></div>
+  <ul id="results"></ul>
+  <button class="ghost" id="more">show more</button>
+  <div id="note">loading…</div>
+</main>
+
+<footer>
+  Clips stay on the wikis; this page only stores their names, quotes and links.
+  Pair it with the <a href="overlay.html">overlay</a> —
+  <a href="https://github.com/TheRealRazbi/kuma_radio">source and setup</a>.
+</footer>
+
+<audio id="player"></audio>
+
+<script>
+"use strict";
+
+const $ = id => document.getElementById(id);
+const PAGE = 200;                       // rows drawn at once; the indexes run to 75k
+const player = $('player');
+
+let doc = null;      // the loaded index for the current source
+let hay = [];        // one normalized haystack string per row, built once per source
+let hits = [];       // row numbers matching the current filters
+let shown = 0;
+let playingRow = -1;
+
+/* ---------------- urls ---------------- */
+
+// Fandom's cdn path is php rawurlencode, which escapes !'()* on top of what
+// encodeURIComponent does. Checked against all 106k audio urls on the league wiki.
+const rawencode = s => encodeURIComponent(s)
+  .replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase());
+
+// The index stores the two hex chars of the cdn's md5 fan-out rather than a whole url,
+// which saves 60-odd bytes on every one of 75k rows.
+function clipUrl(r) {
+  const h = r[6];
+  if (h.slice(0, 4) === 'http') return h;
+  return doc.cdn + '/' + h[0] + '/' + h + '/' + rawencode(r[0]);
+}
+
+// What gets pasted in chat: the File: page, not the cdn link. It is short enough to read,
+// it survives the wiki reshuffling its storage, and the overlay resolves it via the api.
+const wikiUrl = r => 'https://' + doc.wiki + '/wiki/File:' + r[0];
+
+function commandFor(r) {
+  const url = wikiUrl(r);
+  return $('urlonly').checked ? url : ($('prefix').value.trim() + ' ' + url).trim();
+}
+
+/* ---------------- search ---------------- */
+
+// Apostrophes vanish instead of becoming spaces, so "dont lose" finds "Don't lose!".
+// Everything else that isn't a letter or digit is a word break, which is what lets a
+// typed phrase match a line full of commas, ellipses and quotation marks.
+const norm = s => s.toLowerCase()
+  .replace(/[‘’']/g, '')
+  .replace(/[^a-z0-9]+/g, ' ')
+  .trim();
+
+// "" means no filter, and it is also a real value in these tables -- a handful of clips sit
+// under a section the wiki never gave a heading -- so an empty box must not match those.
+const at = (table, v) => (v ? table.indexOf(v) : -1);
+
+function fill(sel, values, all) {
+  const keep = sel.value;
+  sel.innerHTML = '';
+  sel.appendChild(new Option(all, ''));
+  values.slice().sort((a, b) => a.localeCompare(b)).forEach(v => {
+    if (v) sel.appendChild(new Option(v, v));
+  });
+  sel.value = values.includes(keep) ? keep : '';
+}
+
+// Once a champion is chosen, the other two dropdowns should offer that champion's 8 skins
+// rather than all 214 on the wiki.
+function narrow() {
+  const gi = at(doc.groups, $('group').value);
+  const skins = new Set(), cats = new Set();
+  for (const r of doc.rows) {
+    if (gi >= 0 && r[1] !== gi) continue;
+    skins.add(doc.skins[r[2]]);
+    cats.add(doc.cats[r[3]]);
+  }
+  fill($('skin'), [...skins], 'every ' + doc.skinLabel.toLowerCase());
+  fill($('cat'), [...cats], 'every category');
+}
+
+function apply() {
+  const q = norm($('q').value).split(' ').filter(Boolean);
+  const gi = at(doc.groups, $('group').value);
+  const ki = at(doc.skins, $('skin').value);
+  const ci = at(doc.cats, $('cat').value);
+
+  hits = [];
+  for (let i = 0; i < doc.rows.length; i++) {
+    const r = doc.rows[i];
+    if (gi >= 0 && r[1] !== gi) continue;
+    if (ki >= 0 && r[2] !== ki) continue;
+    if (ci >= 0 && r[3] !== ci) continue;
+    if (q.length) {
+      const h = hay[i];
+      let ok = true;
+      for (const t of q) if (h.indexOf(t) < 0) { ok = false; break; }
+      if (!ok) continue;
+    }
+    hits.push(i);
+  }
+  shown = 0;
+  $('results').innerHTML = '';
+  draw();
+  $('count').textContent = hits.length
+    ? hits.length.toLocaleString() + ' clip' + (hits.length === 1 ? '' : 's')
+    : 'nothing matches that';
+  saveState();
+}
+
+/* ---------------- rendering ---------------- */
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+}
+
+function draw() {
+  const frag = document.createDocumentFragment();
+  const end = Math.min(shown + PAGE, hits.length);
+  for (; shown < end; shown++) {
+    const i = hits[shown];
+    const r = doc.rows[i];
+    const said = doc.texts[r[5]];
+    const bits = [doc.groups[r[1]], doc.skins[r[2]], doc.cats[r[3]], doc.subs[r[4]]]
+      .filter(Boolean);
+    const li = document.createElement('li');
+    li.dataset.row = i;
+    li.innerHTML =
+      '<button class="play" title="preview">&#9654;</button>' +
+      '<div class="body"><div class="said' + (said ? '' : ' none') + '">' +
+        esc(said || r[0]) + '</div>' +
+      '<div class="meta"><b class="pick">' + esc(bits[0] || '?') + '</b>' +
+        (bits.length > 1 ? ' &middot; ' + esc(bits.slice(1).join(' · ')) : '') +
+        // no transcript means the file name is already the title above, don't say it twice
+        (said ? ' &middot; ' + esc(r[0]) : '') + '</div></div>' +
+      '<button class="copy">copy</button>';
+    if (i === playingRow) li.classList.add('playing');
+    frag.appendChild(li);
+  }
+  $('results').appendChild(frag);
+  $('more').style.display = shown < hits.length ? 'block' : 'none';
+  $('more').textContent = 'show more (' + (hits.length - shown).toLocaleString() + ' left)';
+}
+
+/* ---------------- preview ---------------- */
+
+function stop() {
+  player.pause();
+  const was = document.querySelector('li.playing');
+  if (was) was.classList.remove('playing');
+  playingRow = -1;
+}
+
+function play(li) {
+  const i = +li.dataset.row;
+  if (i === playingRow) { stop(); return; }
+  stop();
+  playingRow = i;
+  li.classList.add('playing');
+  const url = clipUrl(doc.rows[i]);
+  if (player.src !== url) player.src = url;      // same clip again: rewind, don't refetch
+  try { player.currentTime = 0; } catch (e) { /* not seekable until it has loaded */ }
+  player.play().catch(() => {
+    li.classList.remove('playing');
+    li.querySelector('.play').textContent = '!';
+  });
+}
+
+player.addEventListener('ended', stop);
+
+// Length is worth knowing -- the overlay cuts anything past its maxlen, 15s by default --
+// but the wiki api does not report it, so fill it in from whatever has been previewed.
+player.addEventListener('loadedmetadata', () => {
+  if (playingRow < 0 || !isFinite(player.duration)) return;
+  const li = document.querySelector('li.playing .meta');
+  if (li && !li.querySelector('.len')) {
+    const s = document.createElement('span');
+    s.className = 'len';
+    s.textContent = ' · ' + player.duration.toFixed(1) + 's';
+    li.appendChild(s);
+  }
+});
+
+/* ---------------- clipboard ---------------- */
+
+async function copy(btn, text) {
+  const flash = ok => {
+    btn.classList.add(ok ? 'done' : 'fail');
+    btn.textContent = ok ? 'copied' : 'blocked';
+    setTimeout(() => { btn.className = 'copy'; btn.textContent = 'copy'; }, 1400);
+  };
+  try {
+    await navigator.clipboard.writeText(text);
+    flash(true);
+  } catch (e) {
+    // file:// and older browsers have no clipboard api; the textarea trick still works
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
+    ta.remove();
+    flash(ok);
+  }
+}
+
+/* ---------------- state in the url ---------------- */
+
+let restoring = false;
+
+function saveState() {
+  if (restoring) return;
+  const p = new URLSearchParams();
+  p.set('s', doc.id);
+  if ($('group').value) p.set('g', $('group').value);
+  if ($('skin').value)  p.set('k', $('skin').value);
+  if ($('cat').value)   p.set('c', $('cat').value);
+  if ($('q').value)     p.set('q', $('q').value);
+  history.replaceState(null, '', '#' + p.toString());
+}
+
+/* ---------------- loading ---------------- */
+
+async function loadSource(id, from) {
+  if (doc && doc.id === id) return;
+  stop();
+  $('note').textContent = 'loading the ' + id + ' index…';
+  $('note').style.display = 'block';
+  $('results').innerHTML = '';
+  $('count').textContent = '';
+  $('more').style.display = 'none';
+  for (const b of document.querySelectorAll('nav button')) {
+    b.classList.toggle('on', b.dataset.id === id);
+  }
+
+  const r = await fetch('index/' + id + '.json');
+  if (!r.ok) { $('note').textContent = 'could not load index/' + id + '.json'; return; }
+  doc = await r.json();
+
+  hay = doc.rows.map(row => norm(
+    doc.texts[row[5]] + ' ' + row[0] + ' ' + doc.subs[row[4]] + ' ' +
+    doc.groups[row[1]] + ' ' + doc.skins[row[2]] + ' ' + doc.cats[row[3]]));
+
+  fill($('group'), doc.groups, 'every ' + doc.groupLabel.toLowerCase());
+  $('built').textContent = doc.rows.length.toLocaleString() + ' clips, indexed ' + doc.built;
+
+  restore(from || new URLSearchParams());
+  $('note').style.display = 'none';
+  apply();
+}
+
+function restore(s) {
+  restoring = true;
+  $('group').value = doc.groups.includes(s.get('g')) ? s.get('g') : '';
+  narrow();
+  $('skin').value  = doc.skins.includes(s.get('k'))  ? s.get('k')  : '';
+  $('cat').value   = doc.cats.includes(s.get('c'))   ? s.get('c')  : '';
+  $('q').value     = s.get('q') || '';
+  restoring = false;
+}
+
+// A link into a filtered view is the point of keeping state in the hash, and pasting one
+// while the page is already open only changes the fragment -- no load event to hang this on.
+window.addEventListener('hashchange', () => {
+  const s = new URLSearchParams(location.hash.slice(1));
+  if (s.get('s') && (!doc || s.get('s') !== doc.id)) { loadSource(s.get('s'), s); return; }
+  restore(s);
+  apply();
+});
+
+async function start() {
+  const r = await fetch('index/sources.json');
+  const list = (await r.json()).sources;
+  const nav = $('sources');
+  for (const s of list) {
+    const b = document.createElement('button');
+    b.dataset.id = s.id;
+    b.innerHTML = esc(s.name) + '<span class="n">' + s.clips.toLocaleString() + '</span>';
+    b.addEventListener('click', () => loadSource(s.id));
+    nav.appendChild(b);
+  }
+  const s = new URLSearchParams(location.hash.slice(1));
+  const want = list.some(x => x.id === s.get('s')) ? s.get('s') : list[0].id;
+  await loadSource(want, s);
+}
+
+/* ---------------- wiring ---------------- */
+
+let timer = 0;
+$('q').addEventListener('input', () => {
+  clearTimeout(timer);
+  timer = setTimeout(apply, 140);
+});
+$('group').addEventListener('change', () => { narrow(); apply(); });
+for (const id of ['skin', 'cat']) $(id).addEventListener('change', apply);
+$('more').addEventListener('click', draw);
+
+$('random').addEventListener('click', () => {
+  if (!hits.length) return;
+  const n = Math.floor(Math.random() * hits.length);
+  while (shown <= n) draw();
+  const li = $('results').children[n];
+  li.scrollIntoView({ block: 'center' });
+  play(li);
+});
+
+$('results').addEventListener('click', e => {
+  const li = e.target.closest('li');
+  if (!li) return;
+  if (e.target.closest('.play')) { play(li); return; }
+  if (e.target.closest('.copy')) { copy(e.target, commandFor(doc.rows[+li.dataset.row])); return; }
+  if (e.target.closest('.pick')) {
+    $('group').value = doc.groups[doc.rows[+li.dataset.row][1]];
+    narrow();
+    apply();
+  }
+});
+
+const PREFS = 'kuma-sfx-finder';
+const prefs = (() => {
+  try { return JSON.parse(localStorage.getItem(PREFS)) || {}; } catch (e) { return {}; }
+})();
+$('vol').value = prefs.vol == null ? 60 : prefs.vol;
+$('prefix').value = prefs.prefix || '!sfx';
+$('urlonly').checked = !!prefs.urlonly;
+player.volume = $('vol').value / 100;
+
+function remember() {
+  player.volume = $('vol').value / 100;
+  try {
+    localStorage.setItem(PREFS, JSON.stringify({
+      vol: +$('vol').value, prefix: $('prefix').value, urlonly: $('urlonly').checked }));
+  } catch (e) { /* private mode / restricted storage can throw */ }
+}
+for (const id of ['vol', 'prefix', 'urlonly']) $(id).addEventListener('input', remember);
+
+start().catch(e => { $('note').textContent = 'failed to start: ' + e.message; });
+</script>
+</body>
+</html>

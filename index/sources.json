@@ -1,0 +1,34 @@
+{
+ "sources": [
+  {
+   "id": "lol",
+   "name": "League of Legends",
+   "wiki": "leagueoflegends.fandom.com",
+   "clips": 75980,
+   "groups": 168,
+   "quotes": 75966,
+   "bytes": 5985240,
+   "built": "2026-09-04"
+  },
+  {
+   "id": "dd",
+   "name": "Darkest Dungeon 1 & 2",
+   "wiki": "darkestdungeon.fandom.com",
+   "clips": 821,
+   "groups": 47,
+   "quotes": 622,
+   "bytes": 86185,
+   "built": "2026-09-04"
+  },
+  {
+   "id": "wc3",
+   "name": "Warcraft III",
+   "wiki": "warcraft.fandom.com",
+   "clips": 2233,
+   "groups": 122,
+   "quotes": 0,
+   "bytes": 97159,
+   "built": "2026-09-04"
+  }
+ ]
+}

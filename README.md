@@ -68,13 +68,14 @@ bottom-left, and the background is transparent.
 Links that work:
 
 - a **`File:` page on any Fandom wiki** — the file page, not the article. Tested on the Darkest
-  Dungeon and League of Legends wikis:
+  Dungeon, League of Legends and Warcraft wikis:
   - `https://darkestdungeon.fandom.com/wiki/File:Affliction_abusive.ogg`
   - `https://leagueoflegends.fandom.com/wiki/File:Ahri_Ban.ogg`
+  - `https://warcraft.fandom.com/wiki/File:GhoulDinner.wav`
 - any direct audio link ending in `.ogg .mp3 .wav .m4a .opus .flac .aac .webm`
 
-Champion voice lines on the LoL wiki live on the per-champion audio pages, e.g.
-`Ahri/LoL/Audio` — open the file page for the clip you want and copy that URL.
+Finding those links by hand is the tedious part, so there's a second page for it —
+see [Finding sounds](#finding-sounds).
 
 Use the **underscore** form of the URL, which is what the address bar gives you. A URL pasted with
 literal spaces gets cut at the first space, since chat can't tell a URL with spaces from a URL
@@ -83,6 +84,61 @@ obviously too short is the tell.
 
 Long clips are cut off at `maxlen` (15s by default). Plenty of wiki audio is longer than that —
 LoL recall music runs 10s and up — so raise it if things are getting clipped.
+
+## Finding sounds
+
+Hunting for a clip is harder than playing one. The League wiki plays its audio through a
+JavaScript widget with no right-click-copy, so getting a usable link out of it means reading the
+page source, and no wiki here lets you search for a line by what is actually said in it.
+
+`sfx.html` is a second static page that does that work ahead of time:
+
+```
+https://<user>.github.io/kuma_radio/sfx.html
+```
+
+Type what you remember hearing — `nobody touches the hat` — press **▶** to check it's the right
+clip, then **copy**, which puts `!sfx <link>` on the clipboard ready to paste in chat. Or pick a
+champion or a character and browse everything they say.
+
+| source | clips | with a transcript | browse by |
+|---|---|---|---|
+| League of Legends | 75,980 | 75,966 | champion, skin, category |
+| Darkest Dungeon 1 & 2 | 821 | 622 | character, game, category |
+| Warcraft III | 2,233 | none | unit, campaign, response type |
+
+**Warcraft III is the weak one, and it's worth saying why.** Nothing on the Warcraft wiki
+writes down what these clips say, so there is nothing to search by phrase — searching WC3
+searches file names. The names are the game's own, though, so they carry a lot: `GhoulDinner`,
+`ArcherPissed3` (Blizzard's word for the lines a unit says when you keep clicking it),
+`A07Illidan13`. Browsing by unit and response type is the way in, and the response codes are
+translated — "Annoyed", "Selected", "Ordered to attack" — so the dropdowns read like English.
+
+Details worth knowing:
+
+- The **command** box changes the `!sfx` prefix if the channel uses a different one, and **copy the
+  link only** drops the command word entirely.
+- Filters live in the URL, so `sfx.html#s=lol&g=Braum` links straight to every Braum line.
+- Clip length shows up next to a clip once you've previewed it — the wikis don't publish
+  durations, and the overlay cuts anything past `maxlen`.
+- No audio is copied into this repo. The index holds names, quotes and links; previews and the
+  overlay both stream from the wikis.
+
+### Rebuilding the index
+
+`index/*.json` is committed, so the page needs no server and no build step to run. Regenerate it
+when a wiki gains content:
+
+```bash
+python tools/build_index.py
+```
+
+Standard library only, and a full run takes half an hour or so. It has to page through *every*
+image on each wiki — `filetype:audio` search returns jpgs on these wikis and MIME filtering is
+switched off in miser mode, so there is no shortcut — and then read the article wikitext that
+pairs each clip with the line said in it. Responses are cached under `tools/.cache`, so a second
+run is quick; delete that folder to force a refetch. Fandom rate-limits hard, and two crawls at
+once is enough to trip it, so let one finish before starting the next.
 
 ## Custom sounds
 
