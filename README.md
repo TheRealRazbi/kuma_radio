@@ -227,6 +227,22 @@ few people; past that it's the point to move the list server-side.
   `.../Foo.ogg/revision/latest?cb=...` — that URL form only works for images. It is also exactly
   what the wiki API hands back, so URLs get trimmed to the bare path, which serves the real file.
 
+## License and attribution
+
+The code in this repository — the overlay, the finder, and the indexer — is MIT licensed. See
+[LICENSE](LICENSE). Fork it, host it, change it.
+
+**That licence covers the code only.** It does not cover the audio, which this project never
+copies: `index/*.json` holds names, quotes and links, and both pages stream the files from the
+wikis that host them. The clips themselves remain the property of their respective owners, and
+the transcripts come from the wikis under their own licences.
+
+kuma radio was created under Riot Games' "Legal Jibber Jabber" policy using assets owned by Riot
+Games. Riot Games does not endorse or sponsor this project.
+
+Warcraft III audio is the property of Blizzard Entertainment; Darkest Dungeon audio is the
+property of Red Hook Studios. This project is unaffiliated with, and unendorsed by, any of them.
+
 ## Not included
 
 Each of these needs a server, which is what v1 avoids:
