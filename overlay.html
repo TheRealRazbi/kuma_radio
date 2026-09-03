@@ -214,19 +214,19 @@ async function resolveFandom(u) {
   const url = new URL(u);
   const m = url.pathname.match(/\/wiki\/(?:File|Datei|Fichier|Archivo):(.+)$/i);
   if (!m) return null;
+  const name = decodeURIComponent(m[1]);
   const api = url.origin + '/api.php?action=query&format=json&origin=*'
-            + '&prop=imageinfo&iiprop=url&titles='
-            + encodeURIComponent('File:' + decodeURIComponent(m[1]));
+            + '&prop=imageinfo&iiprop=url&titles=' + encodeURIComponent('File:' + name);
   const r = await fetch(api);
   if (!r.ok) throw new Error('wiki api ' + r.status);
   const j = await r.json();
   const pages = (j.query && j.query.pages) || {};
   for (const k in pages) {
     const info = pages[k].imageinfo;
-    if (info && info[0] && info[0].url) return info[0].url;
+    if (info && info[0] && info[0].url) return { url: info[0].url, name };
   }
-  return null;
-}
+  return { url: null, name };   // name is reported back: a link that got cut at a
+}                               // space shows up as an obviously truncated title
 
 // Wikia's cdn 404s audio at ".../Foo.ogg/revision/latest?cb=..." (that form only
 // works for images) but serves it fine at the bare ".../Foo.ogg". The wiki api hands
@@ -251,9 +251,10 @@ async function resolve(raw) {
   // happens to end in .ogg, and playing it directly gives you a decode error.
   if (/(^|\.)(fandom\.com|wikia\.org)$/i.test(u.hostname) && /^\/wiki\//i.test(u.pathname)) {
     try {
-      const direct = await resolveFandom(u.href);
-      if (direct) { const d = tidy(direct); return { url: d, label: labelFor(d) }; }
-      return { err: 'wiki has no file there' };
+      const hit = await resolveFandom(u.href);
+      if (hit && hit.url) { const d = tidy(hit.url); return { url: d, label: labelFor(d) }; }
+      if (hit) return { err: 'no file called "' + hit.name + '" on that wiki' };
+      return { err: 'that is a wiki page, not a File: page' };
     } catch (e) {
       return { err: 'wiki lookup failed' };
     }

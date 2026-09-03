@@ -67,8 +67,22 @@ bottom-left, and the background is transparent.
 
 Links that work:
 
-- a Fandom wiki file page, e.g. `https://darkestdungeon.fandom.com/wiki/File:Affliction_abusive.ogg`
+- a **`File:` page on any Fandom wiki** — the file page, not the article. Tested on the Darkest
+  Dungeon and League of Legends wikis:
+  - `https://darkestdungeon.fandom.com/wiki/File:Affliction_abusive.ogg`
+  - `https://leagueoflegends.fandom.com/wiki/File:Ahri_Ban.ogg`
 - any direct audio link ending in `.ogg .mp3 .wav .m4a .opus .flac .aac .webm`
+
+Champion voice lines on the LoL wiki live on the per-champion audio pages, e.g.
+`Ahri/LoL/Audio` — open the file page for the clip you want and copy that URL.
+
+Use the **underscore** form of the URL, which is what the address bar gives you. A URL pasted with
+literal spaces gets cut at the first space, since chat can't tell a URL with spaces from a URL
+followed by a comment. When that happens the overlay says `no file called "Ahri"` — a title that's
+obviously too short is the tell.
+
+Long clips are cut off at `maxlen` (15s by default). Plenty of wiki audio is longer than that —
+LoL recall music runs 10s and up — so raise it if things are getting clipped.
 
 Sounds play one at a time; extras wait in a queue. The volume set with `!sfx vol` is remembered
 across restarts, and a remembered value beats the `vol=` in the URL — so once it's been set from
