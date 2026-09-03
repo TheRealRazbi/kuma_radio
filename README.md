@@ -118,6 +118,10 @@ Details worth knowing:
 
 - The **command** box changes the `!sfx` prefix if the channel uses a different one, and **copy the
   link only** drops the command word entirely.
+- **League opens on the Original skin**, because a skin with its own voice-over re-records most of
+  the base lines — Lulu's 117 clips are 40 lines said three times over. Switch the skin box to
+  *every skin* to see the alternates; the choice sticks as you move between champions. Darkest
+  Dungeon and Warcraft III have no Original, so they open unfiltered.
 - Filters live in the URL, so `sfx.html#s=lol&g=Braum` links straight to every Braum line.
 - Clip length shows up next to a clip once you've previewed it — the wikis don't publish
   durations, and the overlay cuts anything past `maxlen`.

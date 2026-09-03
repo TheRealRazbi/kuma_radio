@@ -114,6 +114,9 @@ let hay = [];        // one normalized haystack string per row, built once per s
 let hits = [];       // row numbers matching the current filters
 let shown = 0;
 let playingRow = -1;
+// null means nobody has touched the skin box, so Original applies; '' is someone actually
+// asking for every skin, and that has to survive switching champion.
+let skinChoice = null;
 
 /* ---------------- urls ---------------- */
 
@@ -153,18 +156,22 @@ const norm = s => s.toLowerCase()
 // under a section the wiki never gave a heading -- so an empty box must not match those.
 const at = (table, v) => (v ? table.indexOf(v) : -1);
 
-function fill(sel, values, all) {
-  const keep = sel.value;
+// `want` is the value to select if it is still on offer; anything else falls back to "every".
+function fill(sel, values, all, want) {
   sel.innerHTML = '';
   sel.appendChild(new Option(all, ''));
   values.slice().sort((a, b) => a.localeCompare(b)).forEach(v => {
     if (v) sel.appendChild(new Option(v, v));
   });
-  sel.value = values.includes(keep) ? keep : '';
+  sel.value = values.includes(want) ? want : '';
 }
 
 // Once a champion is chosen, the other two dropdowns should offer that champion's 8 skins
 // rather than all 214 on the wiki.
+//
+// Skin opens on Original, because a skin with its own voice-over re-records most of the base
+// lines: Lulu's 117 clips are 40 lines said three times over. Sources with no Original at all
+// -- Darkest Dungeon, Warcraft III -- have nothing to prefer and open unfiltered.
 function narrow() {
   const gi = at(doc.groups, $('group').value);
   const skins = new Set(), cats = new Set();
@@ -173,8 +180,9 @@ function narrow() {
     skins.add(doc.skins[r[2]]);
     cats.add(doc.cats[r[3]]);
   }
-  fill($('skin'), [...skins], 'every ' + doc.skinLabel.toLowerCase());
-  fill($('cat'), [...cats], 'every category');
+  fill($('skin'), [...skins], 'every ' + doc.skinLabel.toLowerCase(),
+       skinChoice === null ? 'Original' : skinChoice);
+  fill($('cat'), [...cats], 'every category', $('cat').value);
 }
 
 function apply() {
@@ -314,7 +322,9 @@ function saveState() {
   const p = new URLSearchParams();
   p.set('s', doc.id);
   if ($('group').value) p.set('g', $('group').value);
-  if ($('skin').value)  p.set('k', $('skin').value);
+  // an empty skin box is only worth recording where it overrides the Original default,
+  // which keeps "k=" out of Darkest Dungeon and Warcraft III links
+  if ($('skin').value || doc.skins.includes('Original')) p.set('k', $('skin').value);
   if ($('cat').value)   p.set('c', $('cat').value);
   if ($('q').value)     p.set('q', $('q').value);
   history.replaceState(null, '', '#' + p.toString());
@@ -342,7 +352,7 @@ async function loadSource(id, from) {
     doc.texts[row[5]] + ' ' + row[0] + ' ' + doc.subs[row[4]] + ' ' +
     doc.groups[row[1]] + ' ' + doc.skins[row[2]] + ' ' + doc.cats[row[3]]));
 
-  fill($('group'), doc.groups, 'every ' + doc.groupLabel.toLowerCase());
+  fill($('group'), doc.groups, 'every ' + doc.groupLabel.toLowerCase(), $('group').value);
   $('built').textContent = doc.rows.length.toLocaleString() + ' clips, indexed ' + doc.built;
 
   restore(from || new URLSearchParams());
@@ -353,10 +363,12 @@ async function loadSource(id, from) {
 function restore(s) {
   restoring = true;
   $('group').value = doc.groups.includes(s.get('g')) ? s.get('g') : '';
+  // only a link that mentions the skin overrides the default, and "k=" with nothing after it
+  // is how such a link says "every skin" out loud
+  skinChoice = s.has('k') ? (doc.skins.includes(s.get('k')) ? s.get('k') : '') : null;
   narrow();
-  $('skin').value  = doc.skins.includes(s.get('k'))  ? s.get('k')  : '';
-  $('cat').value   = doc.cats.includes(s.get('c'))   ? s.get('c')  : '';
-  $('q').value     = s.get('q') || '';
+  $('cat').value = doc.cats.includes(s.get('c')) ? s.get('c') : '';
+  $('q').value   = s.get('q') || '';
   restoring = false;
 }
 
@@ -393,7 +405,8 @@ $('q').addEventListener('input', () => {
   timer = setTimeout(apply, 140);
 });
 $('group').addEventListener('change', () => { narrow(); apply(); });
-for (const id of ['skin', 'cat']) $(id).addEventListener('change', apply);
+$('skin').addEventListener('change', () => { skinChoice = $('skin').value; apply(); });
+$('cat').addEventListener('change', apply);
 $('more').addEventListener('click', draw);
 
 $('random').addEventListener('click', () => {
