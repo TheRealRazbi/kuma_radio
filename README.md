@@ -68,9 +68,10 @@ bottom-left, and the background is transparent.
 Links that work:
 
 - a **`File:` page on any Fandom wiki** — the file page, not the article. Tested on the Darkest
-  Dungeon, League of Legends and Warcraft wikis:
+  Dungeon, League of Legends, Overwatch and Warcraft wikis:
   - `https://darkestdungeon.fandom.com/wiki/File:Affliction_abusive.ogg`
   - `https://leagueoflegends.fandom.com/wiki/File:Ahri_Ban.ogg`
+  - `https://overwatch.fandom.com/wiki/File:D.Va_-_Nerf_this.ogg`
   - `https://warcraft.fandom.com/wiki/File:GhoulDinner.wav`
 - any direct audio link ending in `.ogg .mp3 .wav .m4a .opus .flac .aac .webm`
 
@@ -104,8 +105,17 @@ champion or a character and browse everything they say.
 | source | clips | with a transcript | browse by |
 |---|---|---|---|
 | League of Legends | 75,980 | 75,966 | champion, skin, category |
+| Overwatch 1 & 2 | 39,834 | 39,637 | hero, game, category |
 | Darkest Dungeon 1 & 2 | 821 | 622 | character, game, category |
 | Warcraft III | 2,233 | none | unit, campaign, response type |
+
+**Overwatch is the tidiest of the four.** Every hero, map and mission has a `/Quotes` page,
+and those pages are tables with the line in one column and the clip in the next, so all but a
+few hundred clips come with the words. Interactions pair up line for line, which is why Ana's
+half of a conversation is filed under Ana even though it was read off Tracer's page. The game
+box separates the two games: a line still in Overwatch 2 is listed as such, and *Overwatch 1*
+is roughly the set that was cut. The wiki writes up more lines than it has files for, so about
+9,000 of them are dropped rather than shipped as dead play buttons.
 
 **Warcraft III is the weak one, and it's worth saying why.** Nothing on the Warcraft wiki
 writes down what these clips say, so there is nothing to search by phrase — searching WC3
@@ -121,7 +131,7 @@ Details worth knowing:
 - **League opens on the Original skin**, because a skin with its own voice-over re-records most of
   the base lines — Lulu's 117 clips are 40 lines said three times over. Switch the skin box to
   *every skin* to see the alternates; the choice sticks as you move between champions. Darkest
-  Dungeon and Warcraft III have no Original, so they open unfiltered.
+  Dungeon, Overwatch and Warcraft III have no Original, so they open unfiltered.
 - Filters live in the URL, so `sfx.html#s=lol&g=Braum` links straight to every Braum line.
 - Clip length shows up next to a clip once you've previewed it — the wikis don't publish
   durations, and the overlay cuts anything past `maxlen`.
@@ -240,8 +250,9 @@ the transcripts come from the wikis under their own licences.
 kuma radio was created under Riot Games' "Legal Jibber Jabber" policy using assets owned by Riot
 Games. Riot Games does not endorse or sponsor this project.
 
-Warcraft III audio is the property of Blizzard Entertainment; Darkest Dungeon audio is the
-property of Red Hook Studios. This project is unaffiliated with, and unendorsed by, any of them.
+Warcraft III and Overwatch audio are the property of Blizzard Entertainment; Darkest Dungeon
+audio is the property of Red Hook Studios. This project is unaffiliated with, and unendorsed
+by, any of them.
 
 ## Not included
 

@@ -23,6 +23,7 @@ from cache import cache                                            # noqa: E402
 from crawl_audio import load as load_audio                         # noqa: E402
 import sources_dd                                                  # noqa: E402
 import sources_lol                                                 # noqa: E402
+import sources_ow                                                  # noqa: E402
 import sources_wc3                                                 # noqa: E402
 
 OUT = os.path.join(os.path.dirname(HERE), 'index')
@@ -35,6 +36,8 @@ CDN = re.compile(r'^(https://static\.wikia\.nocookie\.net/[^/]+(?:/[a-z-]+)?/ima
 SOURCES = {
     'lol': {'name': 'League of Legends', 'host': sources_lol.HOST,
             'group_label': 'Champion', 'skin_label': 'Skin', 'build': sources_lol.build},
+    'ow':  {'name': 'Overwatch 1 & 2', 'host': sources_ow.HOST,
+            'group_label': 'Hero', 'skin_label': 'Game', 'build': sources_ow.build},
     'dd':  {'name': 'Darkest Dungeon 1 & 2', 'host': sources_dd.HOST,
             'group_label': 'Character', 'skin_label': 'Game', 'build': sources_dd.build},
     'wc3': {'name': 'Warcraft III', 'host': sources_wc3.HOST,
