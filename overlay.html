@@ -210,12 +210,15 @@ function labelFor(u) {
 }
 
 // Fandom "File:" pages are html, not audio. Ask the wiki api for the real file url.
+// Language wikis sit one path segment over (leagueoflegends.fandom.com/fr/wiki/...) and so
+// does their api; the root one would look the name up on the English wiki instead.
 async function resolveFandom(u) {
   const url = new URL(u);
-  const m = url.pathname.match(/\/wiki\/(?:File|Datei|Fichier|Archivo):(.+)$/i);
+  const m = url.pathname.match(
+    /^(\/[a-z]{2,3}(?:-[a-z]+)?)?\/wiki\/(?:File|Datei|Fichier|Archivo|Arquivo|Plik|Soubor):(.+)$/i);
   if (!m) return null;
-  const name = decodeURIComponent(m[1]);
-  const api = url.origin + '/api.php?action=query&format=json&origin=*'
+  const name = decodeURIComponent(m[2]);
+  const api = url.origin + (m[1] || '') + '/api.php?action=query&format=json&origin=*'
             + '&prop=imageinfo&iiprop=url&titles=' + encodeURIComponent('File:' + name);
   const r = await fetch(api);
   if (!r.ok) throw new Error('wiki api ' + r.status);
@@ -231,12 +234,21 @@ async function resolveFandom(u) {
 // Wikia's cdn 404s audio at ".../Foo.ogg/revision/latest?cb=..." (that form only
 // works for images) but serves it fine at the bare ".../Foo.ogg". The wiki api hands
 // back the broken form, and so does copying a file link off the wiki, so trim it.
+// A language wiki's file carries its language as ?path-prefix=fr, and trimming that away
+// points at the English wiki, which 404s -- the bare path wants it as .../leagueoflegends/fr/images/.
 function tidy(href) {
   try {
     const u = new URL(href);
-    if (/(^|\.)(nocookie\.net|wikia\.(?:com|org))$/i.test(u.hostname) && EXT_TAIL.test(u.pathname)) {
-      u.pathname = u.pathname.replace(EXT_TAIL, '$1');
-      u.search = '';
+    if (/(^|\.)(nocookie\.net|wikia\.(?:com|org))$/i.test(u.hostname)) {
+      const lang = u.searchParams.get('path-prefix');
+      if (EXT_TAIL.test(u.pathname)) {
+        u.pathname = u.pathname.replace(EXT_TAIL, '$1');
+        u.search = '';
+      }
+      if (lang && /^[a-z]{2,3}(-[a-z]+)?$/i.test(lang) && AUDIO_EXT.test(u.pathname)) {
+        u.pathname = u.pathname.replace(/^(\/[^/]+)\/images\//, '$1/' + lang.toLowerCase() + '/images/');
+        u.search = '';
+      }
     }
     return u.href;
   } catch (e) { return href; }
@@ -249,7 +261,7 @@ async function resolve(raw) {
 
   // must come before the extension test: /wiki/File:Foo.ogg is an html page that
   // happens to end in .ogg, and playing it directly gives you a decode error.
-  if (/(^|\.)(fandom\.com|wikia\.org)$/i.test(u.hostname) && /^\/wiki\//i.test(u.pathname)) {
+  if (/(^|\.)(fandom\.com|wikia\.org)$/i.test(u.hostname) && /^(\/[a-z]{2,3}(-[a-z]+)?)?\/wiki\//i.test(u.pathname)) {
     try {
       const hit = await resolveFandom(u.href);
       if (hit && hit.url) { const d = tidy(hit.url); return { url: d, label: labelFor(d) }; }

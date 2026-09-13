@@ -18,10 +18,15 @@ AUDIO = re.compile(r'\.(ogg|oga|opus|mp3|wav|m4a|aac|flac|weba)$', re.I)
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.cache')
 
 
+def _slug(host):
+    """Language wikis are a path on the same host (leagueoflegends.fandom.com/fr)."""
+    return host.replace('/', '_')
+
+
 def crawl(host):
     """400+ requests on the big wikis, so checkpoint: a rate-limit near the end of a
     20-minute crawl should not cost the whole crawl."""
-    part = os.path.join(CACHE, host + '-partial.json')
+    part = os.path.join(CACHE, _slug(host) + '-partial.json')
     out, cont, pages = [], {}, 0
     if os.path.exists(part):
         with open(part, encoding='utf-8') as f:
@@ -54,7 +59,7 @@ def crawl(host):
 def load(host):
     """Cached crawl. Delete the cache file to refresh."""
     os.makedirs(CACHE, exist_ok=True)
-    path = os.path.join(CACHE, host + '-audio.json')
+    path = os.path.join(CACHE, _slug(host) + '-audio.json')
     if os.path.exists(path):
         with open(path, encoding='utf-8') as f:
             return json.load(f)

@@ -5,6 +5,7 @@ API requests per wiki (see crawl_audio.py), which is fine offline and hopeless i
 
     python tools/build_index.py            # all sources, using tools/.cache
     python tools/build_index.py lol dd     # just these
+    python tools/build_index.py lol-fr     # League in one other language (see sources_lol.LANGS)
 
 Columns are interned into side tables and rows are arrays, because the same champion, skin,
 category and quote repeat thousands of times and the whole file is downloaded by the app.
@@ -15,6 +16,7 @@ import json
 import os
 import re
 import sys
+import urllib.parse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -34,8 +36,15 @@ CDN = re.compile(r'^(https://static\.wikia\.nocookie\.net/[^/]+(?:/[a-z-]+)?/ima
                  r'/([0-9a-f])/([0-9a-f]{2})/', re.I)
 
 SOURCES = {
-    'lol': {'name': 'League of Legends', 'host': sources_lol.HOST,
+    'lol': {'name': 'League of Legends', 'host': sources_lol.HOST, 'family': 'lol',
+            'lang': 'English',
             'group_label': 'Champion', 'skin_label': 'Skin', 'build': sources_lol.build},
+    # the finder shows these as a language picker on League rather than as sources of their own
+    **{'lol-' + code: {'name': 'League of Legends', 'host': sources_lol.HOST + '/' + code,
+                       'family': 'lol', 'lang': lang['name'],
+                       'group_label': 'Champion', 'skin_label': 'Skin',
+                       'build': sources_lol.localized(code)}
+       for code, lang in sources_lol.LANGS.items()},
     'ow':  {'name': 'Overwatch 1 & 2', 'host': sources_ow.HOST,
             'group_label': 'Hero', 'skin_label': 'Game', 'build': sources_ow.build},
     'dd':  {'name': 'Darkest Dungeon 1 & 2', 'host': sources_dd.HOST,
@@ -43,6 +52,18 @@ SOURCES = {
     'wc3': {'name': 'Warcraft III', 'host': sources_wc3.HOST,
             'group_label': 'Unit', 'skin_label': 'Kind', 'build': sources_wc3.build},
 }
+
+
+def cdn_url(url):
+    """A language wiki's files come back from the api as .../leagueoflegends/images/...
+    ?path-prefix=fr. The bare path is the only form that serves audio, and it only finds the
+    file with the language moved into it: .../leagueoflegends/fr/images/..."""
+    parts = urllib.parse.urlsplit(url)
+    lang = urllib.parse.parse_qs(parts.query).get('path-prefix', [''])[0]
+    path = re.sub(r'(\.[a-z0-9]+)/revision/.*$', r'\1', parts.path, flags=re.I)
+    if lang:
+        path = re.sub(r'^(/[^/]+)/images/', r'\1/%s/images/' % lang, path)
+    return urllib.parse.urlunsplit((parts.scheme, parts.netloc, path, '', ''))
 
 
 class Table:
@@ -76,7 +97,7 @@ def build(sid):
         if not hit:
             missing += 1
             continue
-        m = CDN.match(hit['url'])
+        m = CDN.match(cdn_url(hit['url']))
         if not m:
             missing += 1
             continue
@@ -90,6 +111,7 @@ def build(sid):
 
     doc = {
         'id': sid, 'name': spec['name'], 'wiki': spec['host'], 'cdn': base,
+        'family': spec.get('family', sid), 'lang': spec.get('lang', ''),
         'groupLabel': spec['group_label'], 'skinLabel': spec['skin_label'],
         'built': datetime.date.today().isoformat(),
         'cols': ['file', 'group', 'skin', 'cat', 'sub', 'text', 'hash'],
@@ -103,6 +125,7 @@ def build(sid):
     print('   %d clips, %d dropped (not on the wiki), %.1f MB'
           % (len(out), missing, os.path.getsize(path) / 1e6), flush=True)
     return {'id': sid, 'name': spec['name'], 'wiki': spec['host'],
+            'family': spec.get('family', sid), 'lang': spec.get('lang', ''),
             'clips': len(out), 'groups': len(groups.values),
             'quotes': sum(1 for r in out if doc['texts'][r[5]]),
             'bytes': os.path.getsize(path), 'built': doc['built']}

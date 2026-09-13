@@ -73,6 +73,9 @@ Links that work:
   - `https://leagueoflegends.fandom.com/wiki/File:Ahri_Ban.ogg`
   - `https://overwatch.fandom.com/wiki/File:D.Va_-_Nerf_this.ogg`
   - `https://warcraft.fandom.com/wiki/File:GhoulDinner.wav`
+
+  Language wikis work too, whatever the namespace is called there:
+  `https://leagueoflegends.fandom.com/fr/wiki/Fichier:Rammus.provocation01.ogg`
 - any direct audio link ending in `.ogg .mp3 .wav .m4a .opus .flac .aac .webm`
 
 Finding those links by hand is the tedious part, so there's a second page for it —
@@ -105,6 +108,11 @@ champion or a character and browse everything they say.
 | source | clips | with a transcript | browse by |
 |---|---|---|---|
 | League of Legends | 75,980 | 75,966 | champion, skin, category |
+| — in Polski | 29,304 | 28,641 | champion, category |
+| — in Español | 9,943 | 5,500 | champion, category |
+| — in Português (Brasil) | 7,270 | 5,437 | champion, skin, category |
+| — in Français | 5,895 | 5,895 | champion, category |
+| — in Čeština | 938 | 938 | champion, category |
 | Overwatch 1 & 2 | 39,834 | 39,637 | hero, game, category |
 | Darkest Dungeon 1 & 2 | 821 | 622 | character, game, category |
 | Warcraft III | 2,233 | none | unit, campaign, response type |
@@ -132,7 +140,15 @@ Details worth knowing:
   the base lines — Lulu's 117 clips are 40 lines said three times over. Switch the skin box to
   *every skin* to see the alternates; the choice sticks as you move between champions. Darkest
   Dungeon, Overwatch and Warcraft III have no Original, so they open unfiltered.
-- Filters live in the URL, so `sfx.html#s=lol&g=Braum` links straight to every Braum line.
+- **League comes in other languages** — French, Spanish, Polish, Brazilian Portuguese and
+  Czech — from a language box next to the search once League is picked. Each language wiki
+  uploads its own recordings, so coverage is whatever that wiki got round to: Polish has nearly
+  every champion, Brazilian Portuguese has 25 of them in depth, Czech only 21 and those from the
+  old 2014 voice-overs. Spanish has both the Latin American and the Spain dubs, marked LATAM and
+  EUW. Champions keep their English names in every language, so switching language keeps the
+  champion you were looking at. Search ignores accents: `deja` finds `déjà`.
+- Filters live in the URL, so `sfx.html#s=lol&g=Braum` links straight to every Braum line, and
+  `#s=lol-fr&g=Rammus` to every French one.
 - Clip length shows up next to a clip once you've previewed it — the wikis don't publish
   durations, and the overlay cuts anything past `maxlen`.
 - No audio is copied into this repo. The index holds names, quotes and links; previews and the
@@ -146,6 +162,9 @@ when a wiki gains content:
 ```bash
 python tools/build_index.py
 ```
+
+Or name the sources to rebuild — `lol`, `ow`, `dd`, `wc3`, and `lol-fr`, `lol-es`, `lol-pl`,
+`lol-pt-br`, `lol-cs` for League's language wikis (listed in `tools/sources_lol.py`).
 
 Standard library only, and a full run takes half an hour or so. It has to page through *every*
 image on each wiki — `filetype:audio` search returns jpgs on these wikis and MIME filtering is
@@ -228,7 +247,7 @@ from stripped-down CEF builds in the past — if mp3s are silent and oggs aren't
 **The whitelist lives in the URL,** so adding someone means giving the streamer a new URL. Fine for a
 few people; past that it's the point to move the list server-side.
 
-**Fandom / Wikia links** have two traps, both handled, both worth knowing if you adapt this:
+**Fandom / Wikia links** have three traps, all handled, all worth knowing if you adapt this:
 
 - `/wiki/File:Foo.ogg` is an HTML page whose URL happens to end in `.ogg`. Feed it to an `<audio>`
   element and you get a decode error, so the wiki API lookup has to run *before* any file-extension
@@ -236,6 +255,10 @@ few people; past that it's the point to move the list server-side.
 - Wikia's CDN returns 404 and a small JPEG placeholder for audio at
   `.../Foo.ogg/revision/latest?cb=...` — that URL form only works for images. It is also exactly
   what the wiki API hands back, so URLs get trimmed to the bare path, which serves the real file.
+- A language wiki's file comes back as `.../leagueoflegends/images/...?path-prefix=fr`. Trimming
+  the query throws the language away and the CDN looks on the English wiki, which 404s. The
+  language has to move into the path instead: `.../leagueoflegends/fr/images/...`. The same goes
+  for the API itself, which for `/fr/wiki/Fichier:...` lives at `/fr/api.php`.
 
 ## License and attribution
 

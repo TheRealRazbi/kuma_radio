@@ -76,6 +76,7 @@
 
   <div class="filters">
     <input type="text" id="q" placeholder="search what's said — try: nobody touches the hat">
+    <select id="lang" title="voice-over language" hidden></select>
     <select id="group"></select>
     <select id="skin"></select>
     <select id="cat"></select>
@@ -117,6 +118,7 @@ const $ = id => document.getElementById(id);
 const PAGE = 200;                       // rows drawn at once; the indexes run to 75k
 const player = $('player');
 
+let sources = [];    // index/sources.json: every index, League's other languages included
 let doc = null;      // the loaded index for the current source
 let hay = [];        // one normalized haystack string per row, built once per source
 let hits = [];       // row numbers matching the current filters
@@ -154,10 +156,12 @@ function commandFor(r) {
 
 // Apostrophes vanish instead of becoming spaces, so "dont lose" finds "Don't lose!".
 // Everything else that isn't a letter or digit is a word break, which is what lets a
-// typed phrase match a line full of commas, ellipses and quotation marks.
-const norm = s => s.toLowerCase()
+// typed phrase match a line full of commas, ellipses and quotation marks. Accents are
+// dropped rather than treated as breaks, so "deja" finds "déjà" instead of a French line
+// shattering into single letters; letters with nothing to drop (ł, ß) stay letters.
+const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   .replace(/[‘’']/g, '')
-  .replace(/[^a-z0-9]+/g, ' ')
+  .replace(/[^\p{L}\p{N}]+/gu, ' ')
   .trim();
 
 // "" means no filter, and it is also a real value in these tables -- a handful of clips sit
@@ -340,6 +344,10 @@ function saveState() {
 
 /* ---------------- loading ---------------- */
 
+// League's other languages are indexes of their own, grouped under League's button
+const familyOf = id => (sources.find(s => s.id === id) || {}).family || id;
+const langsOf  = id => sources.filter(s => (s.family || s.id) === familyOf(id));
+
 async function loadSource(id, from) {
   if (doc && doc.id === id) return;
   stop();
@@ -349,7 +357,7 @@ async function loadSource(id, from) {
   $('count').textContent = '';
   $('more').style.display = 'none';
   for (const b of document.querySelectorAll('nav button')) {
-    b.classList.toggle('on', b.dataset.id === id);
+    b.classList.toggle('on', b.dataset.id === familyOf(id));
   }
 
   const r = await fetch('index/' + id + '.json');
@@ -361,6 +369,13 @@ async function loadSource(id, from) {
     doc.groups[row[1]] + ' ' + doc.skins[row[2]] + ' ' + doc.cats[row[3]]));
 
   fill($('group'), doc.groups, 'every ' + doc.groupLabel.toLowerCase(), $('group').value);
+  const langs = langsOf(id);
+  $('lang').hidden = langs.length < 2;
+  $('lang').innerHTML = '';
+  for (const s of langs) {
+    $('lang').appendChild(new Option((s.lang || 'English') + ' (' + s.clips.toLocaleString() + ')', s.id));
+  }
+  $('lang').value = id;
   $('built').textContent = doc.rows.length.toLocaleString() + ' clips, indexed ' + doc.built;
 
   restore(from || new URLSearchParams());
@@ -391,13 +406,14 @@ window.addEventListener('hashchange', () => {
 
 async function start() {
   const r = await fetch('index/sources.json');
-  const list = (await r.json()).sources;
+  const list = sources = (await r.json()).sources;
   const nav = $('sources');
   for (const s of list) {
+    if (familyOf(s.id) !== s.id) continue;          // a language, picked from the #lang box
     const b = document.createElement('button');
     b.dataset.id = s.id;
     b.innerHTML = esc(s.name) + '<span class="n">' + s.clips.toLocaleString() + '</span>';
-    b.addEventListener('click', () => loadSource(s.id));
+    b.addEventListener('click', () => { if (!doc || familyOf(doc.id) !== s.id) loadSource(s.id); });
     nav.appendChild(b);
   }
   const s = new URLSearchParams(location.hash.slice(1));
@@ -415,6 +431,14 @@ $('q').addEventListener('input', () => {
 $('group').addEventListener('change', () => { narrow(); apply(); });
 $('skin').addEventListener('change', () => { skinChoice = $('skin').value; apply(); });
 $('cat').addEventListener('change', apply);
+// Champions go by their English names in every language, so the champion and skin carry over.
+// Categories are in the wiki's own language, and so is anything worth searching for.
+$('lang').addEventListener('change', () => {
+  const p = new URLSearchParams();
+  if ($('group').value) p.set('g', $('group').value);
+  if (skinChoice !== null) p.set('k', skinChoice);
+  loadSource($('lang').value, p);
+});
 $('more').addEventListener('click', draw);
 
 $('random').addEventListener('click', () => {

@@ -52,8 +52,14 @@ def clean(s):
 
 
 def unquote(s):
-    """Drop the surrounding double quotes the wikis wrap spoken lines in."""
+    """Drop the surrounding double quotes the wikis wrap spoken lines in: "", “”, and the
+    « » and „” of the French and Polish wikis."""
     s = s.strip()
-    if len(s) > 1 and s[0] in '"“' and s[-1] in '"”':
-        s = s[1:-1].strip()
+    if len(s) > 1 and s[0] in '"“«„' and s[-1] in '"”»“':
+        return s[1:-1].strip()
+    # the Spanish wiki puts the full stop outside: "Se acabaron los juegos".
+    m = re.match(r'^["“«„]([^"“”«»„]+)["”»“]([.!?…]+)$', s)
+    if m:
+        inner = m.group(1).strip()
+        return inner if inner[-1:] in '.!?…' else inner + m.group(2)
     return s
