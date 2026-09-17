@@ -55,15 +55,30 @@ Desktop Audio capture carry it to stream.
 Put the source in a scene that's always live. Nothing is drawn except small toasts in the
 bottom-left, and the background is transparent.
 
+**Picking up a new version.** The streamer's OBS holds the copy it last downloaded, so pushing a
+change here doesn't reach them on its own. Switching scenes doesn't fetch it either, with
+*Refresh browser when scene becomes active* left unchecked as above. To pull the latest: right-click
+the source → **Properties** → **Refresh cache of current page**. That re-downloads the page
+ignoring the cached copy; it does not touch the remembered volume and cutoff, which live in local
+storage. Closing and reopening OBS works too.
+
 ## Commands
 
 | command | who | what |
 |---|---|---|
 | `!sfx <link>` | whitelist | play it |
+| `!sfx <link> 1:05` | whitelist | play it from 1:05 in |
 | `!sfx vol 40` | whitelist, mods, broadcaster | set volume 0–100 |
 | `!sfx vol` | whitelist, mods, broadcaster | show current volume |
 | `!sfx stop` / `!sfx skip` | whitelist, mods, broadcaster | cut the current sound |
 | `!sfx clear` | whitelist, mods, broadcaster | drop everything queued |
+| `!sfx maxlen 30` | mods, broadcaster | set the cutoff in seconds, 0.5–300 |
+| `!sfx maxlen` | mods, broadcaster | show the current cutoff |
+
+`maxlen` is the leash on how long one person can hold the stream, so unlike the other controls it
+is **mods and the broadcaster only** — not the whitelist, who would otherwise be lengthening their
+own leash. It applies to the sound already playing too, so if something is being cut off mid-word,
+raising it rescues that sound rather than needing it played again.
 
 Links that work:
 
@@ -87,7 +102,36 @@ followed by a comment. When that happens the overlay says `no file called "Ahri"
 obviously too short is the tell.
 
 Long clips are cut off at `maxlen` (15s by default). Plenty of wiki audio is longer than that —
-LoL recall music runs 10s and up — so raise it if things are getting clipped.
+LoL recall music runs 10s and up — so raise it with `!sfx maxlen 30` if things are getting clipped.
+The new value is remembered across restarts, the same way `!sfx vol` is.
+
+### Starting part-way in
+
+A number after the link is where to start, as seconds (`30`, `12.5`) or `m:ss` (`1:05`, `2:07.5`):
+
+```
+!sfx https://leagueoflegends.fandom.com/wiki/File:Aatrox_Original_SFX_Recall.ogg 5
+```
+
+That is the way to play something longer than `maxlen` on a stream where raising the cutoff is not
+an option — send the clip once per chunk and let the queue run them back to back:
+
+```
+!sfx <link> 0
+!sfx <link> 15
+!sfx <link> 30
+```
+
+The cutoff is counted from where playback starts, so each of those plays a full `maxlen` seconds.
+Chunks are separate files playing one after another, so expect a small gap at each seam — this
+gets a long clip heard, not a seamless one.
+
+Two things to watch: `cooldown` (3s by default) is per user and applies to each message, so with the
+default the chunks have to be typed a few seconds apart, and the queue holds `queue` of them (5).
+Lower the cooldown or raise the queue in the URL if a long chain keeps getting dropped.
+
+Anything after the link that isn't a time is ignored, so `!sfx <link> loud one` still plays from the
+start. A start past the end of the file says so instead of playing silence.
 
 ## Finding sounds
 
@@ -191,7 +235,14 @@ ffmpeg -i input.mp3 -c:a libvorbis -q:a 5 sounds/output.ogg
 
 Sounds play one at a time; extras wait in a queue. The volume set with `!sfx vol` is remembered
 across restarts, and a remembered value beats the `vol=` in the URL — so once it's been set from
-chat, keep changing it from chat. The OBS fader is independent of both and always wins.
+chat, keep changing it from chat. `!sfx maxlen` works the same way. The OBS fader is independent of
+both and always wins.
+
+Both are remembered in the browser source's local storage, keyed by channel. That survives an OBS
+restart, a page refresh, and even deleting and re-adding the source, because the storage belongs to
+the page's origin rather than to the source. It is lost only if OBS's browser cache folder
+(`%APPDATA%\obs-studio\plugin_config\obs-browser`) is deleted, and then they fall back to the
+`vol=` and `maxlen=` in the URL.
 
 ## URL options
 
@@ -200,7 +251,7 @@ chat, keep changing it from chat. The OBS fader is independent of both and alway
 | `channel` | — | **required** — the channel whose chat to read |
 | `users` | — | **required** — comma-separated, who may play sounds |
 | `vol` | `50` | starting volume, 0–100 |
-| `maxlen` | `15` | hard cutoff in seconds, so nobody parks a long file on the stream |
+| `maxlen` | `15` | starting hard cutoff in seconds, so nobody parks a long file on the stream |
 | `cooldown` | `3` | per-user seconds between sounds |
 | `queue` | `5` | max sounds waiting |
 | `mods` | `0` | `1` lets any mod play sounds, not just the whitelist |

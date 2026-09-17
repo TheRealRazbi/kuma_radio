@@ -55,11 +55,15 @@ const CFG = {
 const AUDIO_EXT = /\.(mp3|ogg|oga|opus|wav|m4a|aac|flac|webm|weba)(\/|$)/i;
 const EXT_TAIL  = /(\.(?:mp3|ogg|oga|opus|wav|m4a|aac|flac|webm|weba))\/.*$/i;
 const VOL_KEY = 'kuma-sfx-vol:' + CFG.channel;
+const LEN_KEY = 'kuma-sfx-maxlen:' + CFG.channel;
 
 let volume = CFG.vol;
+let maxlen = CFG.maxlen;
 try {
-  const saved = localStorage.getItem(VOL_KEY);
-  if (saved !== null) volume = clamp(parseFloat(saved), 0, 100);
+  const savedVol = localStorage.getItem(VOL_KEY);
+  if (savedVol !== null) volume = clamp(parseFloat(savedVol), 0, 100);
+  const savedLen = localStorage.getItem(LEN_KEY);
+  if (savedLen !== null) maxlen = clamp(parseFloat(savedLen), 0.5, 300);
 } catch (e) { /* private mode / restricted storage can throw */ }
 
 /* ---------------- ui ---------------- */
@@ -94,6 +98,7 @@ function drawStatus() {
     '<span class="dot' + (connState === 'live' ? ' live' : '') + '"></span><b>kuma radio</b>  ' + esc(connState) + '\n' +
     'channel   #' + esc(CFG.channel || '(none!)') + '\n' +
     'allowed   ' + esc(CFG.users.join(', ') || '(none!)') + (CFG.allowMods ? ' +mods' : '') + '\n' +
+    'maxlen    ' + maxlen + 's\n' +
     'volume    ' + Math.round(volume) + '%\n' +
     'queue     ' + queue.length + '/' + CFG.queueMax + (playing ? ' (playing)' : '') + '\n' +
     'last      ' + esc(lastEvent);
@@ -111,6 +116,19 @@ function setVolume(v, announce) {
   drawStatus();
 }
 
+function setMaxlen(v, announce) {
+  maxlen = clamp(v, 0.5, 300);
+  try { localStorage.setItem(LEN_KEY, String(maxlen)); } catch (e) {}
+  // whatever is playing is usually the reason someone is raising this, so move its
+  // deadline too instead of making them fire the sound off again
+  if (playing) {
+    clearTimeout(playing.timer);
+    playing.timer = setTimeout(playing.cut, Math.max(0, playing.startedAt + maxlen * 1000 - Date.now()));
+  }
+  if (announce) toast('max length &rarr; <b>' + maxlen + 's</b>', 'ok');
+  drawStatus();
+}
+
 function stopCurrent() {
   if (!playing) return;
   const cur = playing;
@@ -123,19 +141,39 @@ function stopCurrent() {
 function playOne(item) {
   return new Promise(resolve => {
     const a = new Audio();
+    const start = item.start > 0 ? item.start : 0;
     a.volume = volume / 100;
     a.preload = 'auto';
+
+    // setMaxlen moves the cutoff of whatever is playing, so the timer lives on this
+    // record rather than in a local only playOne can see -- otherwise a replaced timer
+    // outlives the sound it belonged to
+    const me = { audio: a, timer: null, startedAt: 0, cut: null, done: null };
 
     let settled = false;
     const finish = () => {
       if (settled) return;
       settled = true;
-      if (playing && playing.audio === a) { clearTimeout(playing.timer); playing = null; }
+      clearTimeout(me.timer);
+      if (playing === me) playing = null;
       drawStatus();
       resolve();
     };
+    me.done = finish;
 
-    a.addEventListener('ended', finish);
+    a.addEventListener('ended', () => {
+      // a start past the end clamps to the end and ends at once, so say that rather
+      // than playing nothing. Judged on what actually played: the duration reported
+      // at loadedmetadata is only an estimate until the file is through.
+      if (!settled && start && a.currentTime - start < 0.15) {
+        toast(esc(item.label) + ' is only <b>' + fmtTime(a.duration) + '</b> long', 'err');
+        lastEvent = 'start past the end of ' + item.label;
+      }
+      finish();
+    });
+    a.addEventListener('loadedmetadata', () => {
+      if (!settled && start && a.currentTime < start - 0.25) a.currentTime = start;  // #t= ignored
+    });
     a.addEventListener('error', () => {
       if (settled) return;                       // stopped on purpose, not a failure
       toast('could not load <b>' + esc(item.label) + '</b>', 'err');
@@ -144,18 +182,23 @@ function playOne(item) {
     });
 
     // hard stop, so nobody parks a 40-minute file on the stream
-    const timer = setTimeout(() => {
+    me.cut = () => {
       a.pause();
-      lastEvent = 'cut at ' + CFG.maxlen + 's';
+      lastEvent = 'cut at ' + maxlen + 's';
       finish();
-    }, CFG.maxlen * 1000);
+    };
+    me.startedAt = Date.now();
+    me.timer = setTimeout(me.cut, maxlen * 1000);
 
-    playing = { audio: a, timer, done: finish };
-    a.src = item.url;
+    playing = me;
+    // media fragment first so it opens at the offset instead of blipping from 0;
+    // loadedmetadata seeks as well for anything that ignores the fragment
+    a.src = start ? item.url.replace(/#.*$/, '') + '#t=' + start : item.url;
 
+    const at = start ? ' &nbsp;<b>@ ' + fmtTime(start) + '</b>' : '';
     a.play().then(() => {
-      toast('<span class="who">' + esc(item.who) + '</span> &nbsp;' + esc(item.label));
-      lastEvent = item.who + ' -> ' + item.label;
+      toast('<span class="who">' + esc(item.who) + '</span> &nbsp;' + esc(item.label) + at);
+      lastEvent = item.who + ' -> ' + item.label + (start ? ' @ ' + fmtTime(start) : '');
       drawStatus();
     }).catch(err => {
       if (settled) return;                       // pause() during load rejects with AbortError
@@ -165,8 +208,7 @@ function playOne(item) {
       } else {
         lastEvent = 'play failed: ' + (err && err.name);
       }
-      clearTimeout(timer);
-      finish();
+      finish();                                  // clears the cutoff timer
     });
   });
 }
@@ -198,7 +240,24 @@ $arm.addEventListener('click', () => {
 /* ---------------- url resolution ---------------- */
 function firstUrl(text) {
   const m = text.match(/https?:\/\/\S+/i);
-  return m ? m[0].replace(/[)\].,!?]+$/, '') : null;
+  if (!m) return null;
+  return { url: m[0].replace(/[)\].,!?]+$/, ''), tail: text.slice(m.index + m[0].length).trim() };
+}
+
+// a start offset: "30", "12.5", "1:05", "2:07.5". A seconds part of 60 or more next to
+// a minutes part ("1:75") is a typo rather than 135s, so it is not read as a time at all.
+function parseTime(s) {
+  const m = /^(?:(\d{1,3}):)?(\d{1,4}(?:\.\d+)?)$/.exec(s);
+  if (!m) return null;
+  const sec = parseFloat(m[2]);
+  if (m[1] && sec >= 60) return null;
+  return (m[1] ? parseInt(m[1], 10) * 60 : 0) + sec;
+}
+
+function fmtTime(t) {
+  const r = Math.round(t * 10) / 10;                 // 59.97s reads as 1:00, not 0:60
+  const m = Math.floor(r / 60), s = Math.round((r - m * 60) * 10) / 10;
+  return m + ':' + (s < 10 ? '0' : '') + s;
 }
 
 function labelFor(u) {
@@ -297,6 +356,15 @@ async function handle(user, tags, msg) {
     else toast('volume is <b>' + Math.round(volume) + '%</b>', 'ok');
     return;
   }
+  // staff only: this is the leash on how long the whitelist can hold the stream,
+  // so it is not theirs to lengthen
+  if (word === 'maxlen' || word === 'len') {
+    if (!isStaff(tags)) return;
+    const n = parseFloat(rest.split(/\s+/)[1]);
+    if (Number.isFinite(n)) setMaxlen(n, true);
+    else toast('max length is <b>' + maxlen + 's</b>', 'ok');
+    return;
+  }
   if (word === 'stop' || word === 'skip') {
     if (!canControl(user, tags)) return;
     stopCurrent();
@@ -319,18 +387,20 @@ async function handle(user, tags, msg) {
   const now = Date.now();
   if (now - (lastUse.get(user) || 0) < CFG.cooldown * 1000) return;
 
-  const raw = firstUrl(rest);
-  if (!raw) return;
+  const hit = firstUrl(rest);
+  if (!hit) return;
+  // anything else after the link is a comment, not a bad time -- stay quiet about it
+  const start = hit.tail ? parseTime(hit.tail.split(/\s+/)[0]) : null;
   lastUse.set(user, now);
 
-  const res = await resolve(raw);
+  const res = await resolve(hit.url);
   if (res.err) {
     toast('<span class="who">' + esc(user) + '</span> ' + esc(res.err), 'err');
     lastEvent = 'rejected: ' + res.err;
     drawStatus();
     return;
   }
-  enqueue({ url: res.url, label: res.label, who: user });
+  enqueue({ url: res.url, label: res.label, who: user, start: start || 0 });
 }
 
 /* ---------------- twitch irc (anonymous, read only) ---------------- */
