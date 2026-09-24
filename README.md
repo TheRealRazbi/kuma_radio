@@ -188,7 +188,9 @@ Details worth knowing:
   Czech — from a language box next to the search once League is picked. Each language wiki
   uploads its own recordings, so coverage is whatever that wiki got round to: Polish has nearly
   every champion, Brazilian Portuguese has 25 of them in depth, Czech only 21 and those from the
-  old 2014 voice-overs. Spanish has both the Latin American and the Spain dubs, marked LATAM and
+  old 2014 voice-overs. French also has a few champions whose quote pages were deleted but whose
+  clips are still up (Ahri, Aatrox, Gangplank, Leona, Zeri): those are found by file name, so
+  they're sorted into Attaque, Rire and so on but have no transcript. Spanish has both the Latin American and the Spain dubs, marked LATAM and
   EUW. Champions keep their English names in every language, so switching language keeps the
   champion you were looking at. Search ignores accents: `deja` finds `déjà`.
 - Filters live in the URL, so `sfx.html#s=lol&g=Braum` links straight to every Braum line, and

@@ -25,7 +25,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import re                                                          # noqa: E402
-from crawl_audio import AUDIO                                      # noqa: E402
+from crawl_audio import AUDIO, load as load_audio                  # noqa: E402
 from wiki import api, chunks                                       # noqa: E402
 from wikitext import clean, unquote                                # noqa: E402
 
@@ -119,7 +119,7 @@ def build(cache):
 # ---------------------------------------------------------------- other languages
 
 LANGS = {
-    'fr':    {'name': 'Français', 'templates': ['Sm2']},
+    'fr':    {'name': 'Français', 'templates': ['Sm2'], 'orphans': True},
     'es':    {'name': 'Español', 'templates': ['Sm2'], 'tabs': True},     # LATAM and EUW tabs
     'pl':    {'name': 'Polski', 'templates': ['Sm2']},
     'pt-br': {'name': 'Português (Brasil)', 'templates': ['Sm2']},
@@ -144,6 +144,16 @@ PLACEHOLDERS = {'por transcribir', 'por traducir', 'do przetłumaczenia', 'a tra
 EN_LINK = re.compile(r'\[\[\s*en\s*:\s*([^\]|]+)', re.I)
 CLIP = re.compile(r'\{\{\s*(?:sm2|ogg)\s*\|', re.I)
 TAB = re.compile(r'^\s*(?:\|-\|)?\s*([^=<>{}\[\]|*;:#]{1,40}?)\s*=\s*$')
+
+# Clips no page embeds any more: the French wiki deleted Ahri/Historique (and others) but kept
+# the files, whose names still say what kind of line they are -- Ahri.attaque01.ogg,
+# Ahri_Selection.ogg, and Zeri's uploaded under English words (Zeri_moving_3.ogg).
+ORPHAN_CATS = {'attaque': 'Attaque', 'mouvement': 'Mouvement', 'blague': 'Blague',
+               'provocation': 'Provocation', 'rire': 'Rire', 'selection': 'En sélection',
+               'moving': 'Mouvement', 'long_moove': 'Mouvement', 'joke': 'Blague',
+               'taunt': 'Provocation', 'laugh': 'Rire', 'pick': 'En sélection',
+               'start': 'En début de partie'}
+NUMBERED = re.compile(r'^([^\W\d_]+)_?\d+$')        # the .attaque01 in Ahri.attaque01.ogg
 
 
 def embedding(host, templates):
@@ -273,6 +283,35 @@ def parse_local(group, text, champs, tabs=False):
     return rows
 
 
+def orphans(names, champs, have):
+    """-> rows for clips in `names` that no page lists, going by the file name alone. Only
+    names that read as a voice line get in: Ahri.<anything>01.ogg, or a known kind of line
+    after an underscore. The rest are login themes, lore and sound effects."""
+    prefixes = sorted(((v, c) for c in champs
+                       for v in {c, c.replace(' ', '_'), re.sub(r'[\W_]', '', c)}),
+                      key=lambda p: -len(p[0]))
+    rows = []
+    for name in sorted(n.replace(' ', '_') for n in names):
+        if name in have or not name.lower().endswith('.ogg') or 'sfx' in name.lower():
+            continue
+        hit = next(((v, c) for v, c in prefixes
+                    if name.startswith(v) and name[len(v):len(v) + 1] in ('.', '_')), None)
+        if not hit:
+            continue                       # a skin (DravenFaucheur.rire02) or not a champion
+        v, champ = hit
+        stem = name[len(v) + 1:-len('.ogg')]
+        n = NUMBERED.match(stem)
+        if name[len(v)] == '.' and n:
+            cat = ORPHAN_CATS.get(n.group(1).lower(), '')
+        else:
+            cat = ORPHAN_CATS.get(re.sub(r'_?\d+$', '', stem).lower())
+            if cat is None:
+                continue
+        rows.append({'file': name, 'group': champ, 'skin': 'Original',
+                     'cat': cat, 'sub': '', 'text': ''})
+    return rows
+
+
 def localized(lang):
     spec = LANGS[lang]
     host = HOST + '/' + lang
@@ -300,6 +339,11 @@ def localized(lang):
                     seen.add(key)
                     rows.append(r)
         print('  %d of them are champion pages' % used, flush=True)
+        if spec.get('orphans'):
+            extra = orphans([a['name'] for a in load_audio(host)], champs,
+                            {r['file'] for r in rows})
+            print('  %d more clips no page lists' % len(extra), flush=True)
+            rows += extra
         return rows
 
     return build
