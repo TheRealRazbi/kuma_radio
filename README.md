@@ -83,10 +83,11 @@ raising it rescues that sound rather than needing it played again.
 Links that work:
 
 - a **`File:` page on any Fandom wiki** — the file page, not the article. Tested on the Darkest
-  Dungeon, League of Legends, Overwatch and Warcraft wikis:
+  Dungeon, League of Legends, Overwatch, StarCraft and Warcraft wikis:
   - `https://darkestdungeon.fandom.com/wiki/File:Affliction_abusive.ogg`
   - `https://leagueoflegends.fandom.com/wiki/File:Ahri_Ban.ogg`
   - `https://overwatch.fandom.com/wiki/File:D.Va_-_Nerf_this.ogg`
+  - `https://starcraft.fandom.com/wiki/File:Marine_What00.ogg`
   - `https://warcraft.fandom.com/wiki/File:GhoulDinner.wav`
 
   Language wikis work too, whatever the namespace is called there:
@@ -160,8 +161,9 @@ champion or a character and browse everything they say.
 | Overwatch 1 & 2 | 39,834 | 39,637 | hero, game, category |
 | Darkest Dungeon 1 & 2 | 821 | 622 | character, game, category |
 | Warcraft III | 2,233 | none | unit, campaign, response type |
+| StarCraft II | 3,977 | 3,977 | unit, race, category |
 
-**Overwatch is the tidiest of the four.** Every hero, map and mission has a `/Quotes` page,
+**Overwatch is the tidiest of the big ones.** Every hero, map and mission has a `/Quotes` page,
 and those pages are tables with the line in one column and the clip in the next, so all but a
 few hundred clips come with the words. Interactions pair up line for line, which is why Ana's
 half of a conversation is filed under Ana even though it was read off Tracer's page. The game
@@ -176,6 +178,13 @@ searches file names. The names are the game's own, though, so they carry a lot: 
 `A07Illidan13`. Browsing by unit and response type is the way in, and the response codes are
 translated — "Annoyed", "Selected", "Ordered to attack" — so the dropdowns read like English.
 
+**StarCraft II is small but complete.** The StarCraft wiki keeps each unit's lines in a quote
+box — selected, move order, attack order, repeatedly selected — with the clip and its words
+side by side, so every clip comes with a transcript. That covers the units and heroes of all
+three races across Versus, the campaigns and Co-op, and the section plus any variant (the
+female Ghost, Tychus in the Odin) is shown next to each clip. The wiki's campaign and Co-op
+mission transcripts have no clips attached, so story dialogue isn't in here.
+
 Details worth knowing:
 
 - The **command** box changes the `!sfx` prefix if the channel uses a different one, and **copy the
@@ -183,7 +192,8 @@ Details worth knowing:
 - **League opens on the Original skin**, because a skin with its own voice-over re-records most of
   the base lines — Lulu's 117 clips are 40 lines said three times over. Switch the skin box to
   *every skin* to see the alternates; the choice sticks as you move between champions. Darkest
-  Dungeon, Overwatch and Warcraft III have no Original, so they open unfiltered.
+  Dungeon, Overwatch, StarCraft II and Warcraft III have no Original, so they open
+  unfiltered.
 - **League comes in other languages** — French, Spanish, Polish, Brazilian Portuguese and
   Czech — from a language box next to the search once League is picked. Each language wiki
   uploads its own recordings, so coverage is whatever that wiki got round to: Polish has nearly
@@ -326,9 +336,9 @@ the transcripts come from the wikis under their own licences.
 kuma radio was created under Riot Games' "Legal Jibber Jabber" policy using assets owned by Riot
 Games. Riot Games does not endorse or sponsor this project.
 
-Warcraft III and Overwatch audio are the property of Blizzard Entertainment; Darkest Dungeon
-audio is the property of Red Hook Studios. This project is unaffiliated with, and unendorsed
-by, any of them.
+Warcraft III, Overwatch and StarCraft II audio are the property of Blizzard Entertainment;
+Darkest Dungeon audio is the property of Red Hook Studios. This project is unaffiliated with,
+and unendorsed by, any of them.
 
 ## Not included
 

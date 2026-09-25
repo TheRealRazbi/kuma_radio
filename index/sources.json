@@ -101,6 +101,18 @@
    "quotes": 0,
    "bytes": 97159,
    "built": "2026-09-04"
+  },
+  {
+   "id": "sc2",
+   "name": "StarCraft II",
+   "wiki": "starcraft.fandom.com",
+   "family": "sc2",
+   "lang": "",
+   "clips": 3977,
+   "groups": 117,
+   "quotes": 3977,
+   "bytes": 277369,
+   "built": "2026-09-25"
   }
  ]
 }

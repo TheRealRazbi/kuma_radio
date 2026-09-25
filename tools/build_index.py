@@ -26,6 +26,7 @@ from crawl_audio import load as load_audio                         # noqa: E402
 import sources_dd                                                  # noqa: E402
 import sources_lol                                                 # noqa: E402
 import sources_ow                                                  # noqa: E402
+import sources_sc2                                                 # noqa: E402
 import sources_wc3                                                 # noqa: E402
 
 OUT = os.path.join(os.path.dirname(HERE), 'index')
@@ -51,6 +52,8 @@ SOURCES = {
             'group_label': 'Character', 'skin_label': 'Game', 'build': sources_dd.build},
     'wc3': {'name': 'Warcraft III', 'host': sources_wc3.HOST,
             'group_label': 'Unit', 'skin_label': 'Kind', 'build': sources_wc3.build},
+    'sc2': {'name': 'StarCraft II', 'host': sources_sc2.HOST,
+            'group_label': 'Unit', 'skin_label': 'Race', 'build': sources_sc2.build},
 }
 
 
