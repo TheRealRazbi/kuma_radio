@@ -6,6 +6,7 @@ API requests per wiki (see crawl_audio.py), which is fine offline and hopeless i
     python tools/build_index.py            # all sources, using tools/.cache
     python tools/build_index.py lol dd     # just these
     python tools/build_index.py lol-fr     # League in one other language (see sources_lol.LANGS)
+    python tools/build_index.py saved      # after editing tools/saved.json; a few requests
 
 Columns are interned into side tables and rows are arrays, because the same champion, skin,
 category and quote repeat thousands of times and the whole file is downloaded by the app.
@@ -26,6 +27,7 @@ from crawl_audio import load as load_audio                         # noqa: E402
 import sources_dd                                                  # noqa: E402
 import sources_lol                                                 # noqa: E402
 import sources_ow                                                  # noqa: E402
+import sources_saved                                               # noqa: E402
 import sources_sc2                                                 # noqa: E402
 import sources_wc3                                                 # noqa: E402
 
@@ -54,6 +56,9 @@ SOURCES = {
             'group_label': 'Unit', 'skin_label': 'Kind', 'build': sources_wc3.build},
     'sc2': {'name': 'StarCraft II', 'host': sources_sc2.HOST,
             'group_label': 'Unit', 'skin_label': 'Race', 'build': sources_sc2.build},
+    # hand-picked links from anywhere, tools/saved.json; no host of its own to crawl
+    'saved': {'name': 'Saved', 'host': None,
+              'group_label': 'Game', 'skin_label': 'Character', 'build': sources_saved.build},
 }
 
 
@@ -90,12 +95,20 @@ def build(sid):
 
     # the crawl is the source of truth for what exists: wikitext happily links clips that
     # were renamed or never uploaded, and those would be dead play buttons in the app
-    files = {a['name']: a for a in load_audio(spec['host'])}
-    files.update({a['name'].replace(' ', '_'): a for a in load_audio(spec['host'])})
+    files = {}
+    if spec['host']:
+        files = {a['name']: a for a in load_audio(spec['host'])}
+        files.update({a['name'].replace(' ', '_'): a for a in load_audio(spec['host'])})
 
     groups, skins, cats, subs, texts = Table(), Table(), Table(), Table(), Table()
     out, missing, seen, base = [], 0, set(), None
     for r in rows:
+        if r.get('page'):
+            # a saved clip comes from wherever it lives, so it carries its whole url where the
+            # others carry a hash, and the link to paste in chat after that
+            out.append([r['file'], groups(r['group']), skins(r['skin']), cats(r['cat']),
+                        subs(r['sub']), texts(r['text']), cdn_url(r['url']), r['page']])
+            continue
         hit = files.get(r['file'])
         if not hit:
             missing += 1
@@ -112,12 +125,15 @@ def build(sid):
         out.append([hit['name'].replace(' ', '_'), groups(r['group']), skins(r['skin']),
                     cats(r['cat']), subs(r['sub']), texts(r['text']), m.group(3)])
 
+    cols = ['file', 'group', 'skin', 'cat', 'sub', 'text', 'hash']
+    if any(len(r) > 7 for r in out):
+        cols += ['page']
     doc = {
-        'id': sid, 'name': spec['name'], 'wiki': spec['host'], 'cdn': base,
+        'id': sid, 'name': spec['name'], 'wiki': spec['host'] or '', 'cdn': base,
         'family': spec.get('family', sid), 'lang': spec.get('lang', ''),
         'groupLabel': spec['group_label'], 'skinLabel': spec['skin_label'],
         'built': datetime.date.today().isoformat(),
-        'cols': ['file', 'group', 'skin', 'cat', 'sub', 'text', 'hash'],
+        'cols': cols,
         'groups': groups.values, 'skins': skins.values, 'cats': cats.values,
         'subs': subs.values, 'texts': texts.values, 'rows': out,
     }
@@ -127,7 +143,7 @@ def build(sid):
         json.dump(doc, f, ensure_ascii=False, separators=(',', ':'))
     print('   %d clips, %d dropped (not on the wiki), %.1f MB'
           % (len(out), missing, os.path.getsize(path) / 1e6), flush=True)
-    return {'id': sid, 'name': spec['name'], 'wiki': spec['host'],
+    return {'id': sid, 'name': spec['name'], 'wiki': spec['host'] or '',
             'family': spec.get('family', sid), 'lang': spec.get('lang', ''),
             'clips': len(out), 'groups': len(groups.values),
             'quotes': sum(1 for r in out if doc['texts'][r[5]]),

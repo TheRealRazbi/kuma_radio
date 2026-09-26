@@ -113,6 +113,18 @@
    "quotes": 3977,
    "bytes": 277369,
    "built": "2026-09-25"
+  },
+  {
+   "id": "saved",
+   "name": "Saved",
+   "wiki": "",
+   "family": "saved",
+   "lang": "",
+   "clips": 2,
+   "groups": 1,
+   "quotes": 2,
+   "bytes": 793,
+   "built": "2026-09-24"
   }
  ]
 }

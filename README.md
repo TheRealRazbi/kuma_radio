@@ -156,12 +156,19 @@ champion or a character and browse everything they say.
 | — in Polski | 29,304 | 28,641 | champion, category |
 | — in Español | 9,943 | 5,500 | champion, category |
 | — in Português (Brasil) | 7,270 | 5,437 | champion, skin, category |
-| — in Français | 5,895 | 5,895 | champion, category |
+| — in Français | 6,047 | 5,895 | champion, category |
 | — in Čeština | 938 | 938 | champion, category |
 | Overwatch 1 & 2 | 39,834 | 39,637 | hero, game, category |
 | Darkest Dungeon 1 & 2 | 821 | 622 | character, game, category |
 | Warcraft III | 2,233 | none | unit, campaign, response type |
 | StarCraft II | 3,977 | 3,977 | unit, race, category |
+| Saved | 2 | 2 | game, character, category |
+
+**Saved is a hand-picked list** for games not worth indexing whole — the Hearthstone pack
+opening's "Wooah, Legendary!", SI:7 Agent's "Heh, this guy's toast." It lives in
+`tools/saved.json`, one entry per clip, and holds links only, never audio: a wiki `File:` page
+is looked up for its file and pasted in chat as is, and any other link (a `sounds/` file, a
+direct audio url) is used as given. Add an entry, then `python tools/build_index.py saved`.
 
 **Overwatch is the tidiest of the big ones.** Every hero, map and mission has a `/Quotes` page,
 and those pages are tables with the line in one column and the clip in the next, so all but a
