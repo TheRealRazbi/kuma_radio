@@ -160,7 +160,7 @@ champion or a character and browse everything they say.
 | — in Čeština | 938 | 938 | champion, category |
 | Overwatch 1 & 2 | 39,834 | 39,637 | hero, game, category |
 | Darkest Dungeon 1 & 2 | 821 | 622 | character, game, category |
-| Warcraft III | 2,233 | none | unit, campaign, response type |
+| Warcraft III | 2,233 | 2,231 | unit, campaign, response type |
 | StarCraft II | 3,977 | 3,977 | unit, race, category |
 | Saved | 2 | 2 | game, character, category |
 
@@ -178,12 +178,17 @@ box separates the two games: a line still in Overwatch 2 is listed as such, and 
 is roughly the set that was cut. The wiki writes up more lines than it has files for, so about
 9,000 of them are dropped rather than shipped as dead play buttons.
 
-**Warcraft III is the weak one, and it's worth saying why.** Nothing on the Warcraft wiki
-writes down what these clips say, so there is nothing to search by phrase — searching WC3
-searches file names. The names are the game's own, though, so they carry a lot: `GhoulDinner`,
-`ArcherPissed3` (Blizzard's word for the lines a unit says when you keep clicking it),
-`A07Illidan13`. Browsing by unit and response type is the way in, and the response codes are
-translated — "Annoyed", "Selected", "Ordered to attack" — so the dropdowns read like English.
+**Warcraft III gets its words from two places.** The wiki's *Quotes of Warcraft III* pages tag
+each line with the file that says it, which covers every unit and hero — about 2,060 clips,
+including the ones people hunt for: `ArcherPissed3` is Blizzard's name for a line a unit says when
+you keep clicking it, filed here as "Annoyed (clicked too often)". The other 170-odd, mostly
+campaign dialogue plus Furion and the morphed Demon Hunter, are on no page at all, so they were
+put through speech recognition once and the result is committed in `tools/wc3_heard.json`. Where
+that heard line is one the wiki spells out elsewhere — Furion's lines are Malfurion's, and
+"For King Terranus" is Uther's "For King Terenas!" — the wiki's spelling is used; the rest are
+marked **by ear** next to the file name. Whole sentences come back word for word; it is the
+grunts and the invented languages it can't spell. Two clips, a ghoul eating and a villager's cry, have
+no words at all.
 
 **StarCraft II is small but complete.** The StarCraft wiki keeps each unit's lines in a quote
 box — selected, move order, attack order, repeatedly selected — with the clip and its words
@@ -235,6 +240,11 @@ switched off in miser mode, so there is no shortcut — and then read the articl
 pairs each clip with the line said in it. Responses are cached under `tools/.cache`, so a second
 run is quick; delete that folder to force a refetch. Fandom rate-limits hard, and two crawls at
 once is enough to trip it, so let one finish before starting the next.
+
+The one step that isn't stdlib is `tools/transcribe_wc3.py`, which rewrites
+`tools/wc3_heard.json` and needs `faster-whisper` in a venv of its own (setup in its docstring).
+The builder only reads the json, so this is only worth rerunning when the Warcraft quote pages
+change which clips they cover.
 
 ## Custom sounds
 

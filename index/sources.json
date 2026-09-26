@@ -96,11 +96,13 @@
    "id": "wc3",
    "name": "Warcraft III",
    "wiki": "warcraft.fandom.com",
+   "family": "wc3",
+   "lang": "",
    "clips": 2233,
    "groups": 122,
-   "quotes": 0,
-   "bytes": 97159,
-   "built": "2026-09-04"
+   "quotes": 2231,
+   "bytes": 164509,
+   "built": "2026-09-26"
   },
   {
    "id": "sc2",
