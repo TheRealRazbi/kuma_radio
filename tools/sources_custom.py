@@ -1,8 +1,8 @@
-"""Saved: hand-picked clips from games the finder doesn't index whole.
+"""Custom: hand-picked clips from games the finder doesn't index whole.
 
 Indexing all of Hearthstone for the two lines anyone asks for is a half-hour crawl and a few
 megabytes of index; copying the files into sounds/ would be re-hosting someone else's audio.
-So tools/saved.json keeps just the links, one entry per clip:
+So tools/custom.json keeps just the links, one entry per clip:
 
     {"game": "Hearthstone", "who": "SI:7 Agent", "cat": "Card played",
      "said": "Heh, this guy's toast.",
@@ -22,7 +22,7 @@ import urllib.parse
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from wiki import api, chunks                                       # noqa: E402
 
-LIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'saved.json')
+LIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'custom.json')
 # host keeps a language wiki's path (leagueoflegends.fandom.com/fr), which is where its api is
 FILE_PAGE = re.compile(r'^https?://([^/]+\.fandom\.com(?:/[a-z]{2,3}(?:-[a-z]+)?)?)'
                        r'/wiki/[^:/]+:(.+)$', re.I)

@@ -6,7 +6,7 @@
 <title>kuma radio — sfx finder</title>
 <style>
   :root{--bg:#0e0e12;--panel:#16161d;--line:#26262f;--ink:#e9e9f0;--dim:#9a9aa8;
-        --accent:#9147ff;--accent-soft:#b98cff;--ok:#3fb950;--err:#e0503f}
+        --accent:#9147ff;--accent-soft:#b98cff;--ok:#3fb950;--err:#e0503f;--star:#f2c94c}
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--ink);
     font:15px/1.5 "Segoe UI",system-ui,sans-serif}
@@ -58,6 +58,10 @@
   .copy:hover{border-color:var(--accent)}
   .copy.done{border-color:var(--ok);color:var(--ok)}
   .copy.fail{border-color:var(--err);color:var(--err)}
+  .mark{flex:0 0 auto;background:none;border:1px solid var(--line);color:var(--dim);
+    border-radius:6px;padding:6px 9px;cursor:pointer;font-size:14px;line-height:1.2}
+  .mark:hover{border-color:var(--accent);color:var(--ink)}
+  .mark.on{color:var(--star);border-color:var(--star)}
   #more{display:none;margin:14px auto 0;padding:9px 18px}
   #note{padding:24px 0;color:var(--dim)}
   footer{max-width:960px;margin:0 auto;padding:20px;border-top:1px solid var(--line);
@@ -146,7 +150,7 @@ function clipUrl(r) {
 
 // What gets pasted in chat: the File: page, not the cdn link. It is short enough to read,
 // it survives the wiki reshuffling its storage, and the overlay resolves it via the api.
-// Saved clips come from all over, so each carries its own link to paste.
+// Custom and Saved clips come from all over, so each carries its own link to paste.
 const wikiUrl = r => r[7] || 'https://' + doc.wiki + '/wiki/File:' + r[0];
 
 function commandFor(r) {
@@ -225,7 +229,9 @@ function apply() {
   draw();
   $('count').textContent = hits.length
     ? hits.length.toLocaleString() + ' clip' + (hits.length === 1 ? '' : 's')
-    : 'nothing matches that';
+    : doc.id === 'saved' && !doc.rows.length
+      ? 'nothing saved yet — the ☆ next to any clip keeps it here'
+      : 'nothing matches that';
   saveState();
 }
 
@@ -254,7 +260,9 @@ function draw() {
         (bits.length > 1 ? ' &middot; ' + esc(bits.slice(1).join(' · ')) : '') +
         // no transcript means the file name is already the title above, don't say it twice
         (said ? ' &middot; ' + esc(r[0]) : '') + '</div></div>' +
+      '<button class="mark"></button>' +
       '<button class="copy">copy</button>';
+    markButton(li.querySelector('.mark'));
     if (i === playingRow) li.classList.add('playing');
     frag.appendChild(li);
   }
@@ -328,6 +336,94 @@ async function copy(btn, text) {
   }
 }
 
+/* ---------------- saved ---------------- */
+
+// Saved is this browser's own list: the star on any clip keeps it there. With no server
+// behind the page it can only live in localStorage, so every viewer has their own. Each entry
+// carries what it takes to show and play the clip -- the audio url and the link to paste --
+// so the list never has to load the index the clip came from.
+const SAVED = 'kuma-sfx-saved';
+
+function loadSaved() {
+  try {
+    const v = JSON.parse(localStorage.getItem(SAVED));
+    return Array.isArray(v) ? v.filter(c => c && c.page && c.url) : [];
+  } catch (e) { return []; }
+}
+
+let saved = loadSaved();
+let savedSet = new Set(saved.map(c => c.page));
+
+function entryFor(r) {
+  // Custom is a list of games already, so its group is the game and its skin the speaker
+  const custom = doc.groupLabel === 'Game';
+  const lang = doc.lang && doc.lang !== 'English' ? ' (' + doc.lang + ')' : '';
+  return {
+    game: custom ? doc.groups[r[1]] : doc.name + lang,
+    who:  custom ? doc.skins[r[2]] : doc.groups[r[1]],
+    cat:  doc.cats[r[3]],
+    sub:  (custom ? [doc.subs[r[4]]] : [doc.skins[r[2]], doc.subs[r[4]]]).filter(Boolean).join(' · '),
+    said: doc.texts[r[5]], file: r[0], url: clipUrl(r), page: wikiUrl(r), from: doc.id,
+  };
+}
+
+// The Saved tab is an index like any other, built here from the list, newest first.
+function savedDoc() {
+  const t = { groups: [], skins: [], cats: [], subs: [], texts: [] };
+  const intern = (k, v) => {
+    v = v || '';
+    let i = t[k].indexOf(v);
+    if (i < 0) { i = t[k].length; t[k].push(v); }
+    return i;
+  };
+  const entries = saved.slice().reverse();
+  return {
+    id: 'saved', name: 'Saved', wiki: '', cdn: '', family: 'saved', lang: '',
+    groupLabel: 'Game', skinLabel: 'Character', ...t, entries,
+    rows: entries.map(c => [c.file, intern('groups', c.game), intern('skins', c.who),
+      intern('cats', c.cat), intern('subs', c.sub), intern('texts', c.said), c.url, c.page]),
+  };
+}
+
+function savedChanged() {
+  savedSet = new Set(saved.map(c => c.page));
+  const b = document.querySelector('nav button[data-id="saved"] .n');
+  if (b) b.textContent = saved.length.toLocaleString();
+}
+
+function storeSaved() {
+  savedChanged();
+  try { localStorage.setItem(SAVED, JSON.stringify(saved)); } catch (e) { /* kept for this visit */ }
+}
+
+// Unstarring inside Saved leaves the row where it is, so a slip of the mouse can be undone;
+// it is gone the next time the tab opens.
+function toggleSaved(i) {
+  const c = doc.entries ? doc.entries[i] : entryFor(doc.rows[i]);
+  const at = saved.findIndex(x => x.page === c.page);
+  if (at >= 0) saved.splice(at, 1); else saved.push(c);
+  storeSaved();
+  // the same clip can sit under more than one category, so mark every copy of it
+  for (const li of $('results').children) {
+    if (wikiUrl(doc.rows[+li.dataset.row]) === c.page) markButton(li.querySelector('.mark'));
+  }
+}
+
+function markButton(btn) {
+  const on = savedSet.has(wikiUrl(doc.rows[+btn.closest('li').dataset.row]));
+  btn.classList.toggle('on', on);
+  btn.innerHTML = on ? '&#9733;' : '&#9734;';
+  btn.title = on ? 'remove from Saved' : 'keep in Saved';
+}
+
+// another tab starred something
+window.addEventListener('storage', e => {
+  if (e.key !== SAVED) return;
+  saved = loadSaved();
+  savedChanged();
+  for (const btn of document.querySelectorAll('#results .mark')) markButton(btn);
+});
+
 /* ---------------- state in the url ---------------- */
 
 let restoring = false;
@@ -364,9 +460,13 @@ async function loadSource(id, from) {
     b.classList.toggle('on', b.dataset.id === familyOf(id));
   }
 
-  const r = await fetch('index/' + id + '.json');
-  if (!r.ok) { $('note').textContent = 'could not load index/' + id + '.json'; return; }
-  doc = await r.json();
+  if (id === 'saved') {
+    doc = savedDoc();
+  } else {
+    const r = await fetch('index/' + id + '.json');
+    if (!r.ok) { $('note').textContent = 'could not load index/' + id + '.json'; return; }
+    doc = await r.json();
+  }
 
   hay = doc.rows.map(row => norm(
     doc.texts[row[5]] + ' ' + row[0] + ' ' + doc.subs[row[4]] + ' ' +
@@ -380,7 +480,9 @@ async function loadSource(id, from) {
     $('lang').appendChild(new Option((s.lang || 'English') + ' (' + s.clips.toLocaleString() + ')', s.id));
   }
   $('lang').value = id;
-  $('built').textContent = doc.rows.length.toLocaleString() + ' clips, indexed ' + doc.built;
+  $('built').textContent = doc.id === 'saved'
+    ? 'saved in this browser only'
+    : doc.rows.length.toLocaleString() + ' clips, indexed ' + doc.built;
 
   restore(from || new URLSearchParams());
   $('note').style.display = 'none';
@@ -412,8 +514,9 @@ async function start() {
   const r = await fetch('index/sources.json');
   const list = sources = (await r.json()).sources;
   const nav = $('sources');
-  for (const s of list) {
-    if (familyOf(s.id) !== s.id) continue;          // a language, picked from the #lang box
+  const tabs = [...list.filter(s => familyOf(s.id) === s.id),   // languages: the #lang box
+                { id: 'saved', name: 'Saved', clips: saved.length }];
+  for (const s of tabs) {
     const b = document.createElement('button');
     b.dataset.id = s.id;
     b.innerHTML = esc(s.name) + '<span class="n">' + s.clips.toLocaleString() + '</span>';
@@ -421,7 +524,8 @@ async function start() {
     nav.appendChild(b);
   }
   const s = new URLSearchParams(location.hash.slice(1));
-  const want = list.some(x => x.id === s.get('s')) ? s.get('s') : list[0].id;
+  const want = tabs.some(x => x.id === s.get('s')) || list.some(x => x.id === s.get('s'))
+    ? s.get('s') : list[0].id;
   await loadSource(want, s);
 }
 
@@ -459,6 +563,7 @@ $('results').addEventListener('click', e => {
   if (!li) return;
   if (e.target.closest('.play')) { play(li); return; }
   if (e.target.closest('.copy')) { copy(e.target, commandFor(doc.rows[+li.dataset.row])); return; }
+  if (e.target.closest('.mark')) { toggleSaved(+li.dataset.row); return; }
   if (e.target.closest('.pick')) {
     $('group').value = doc.groups[doc.rows[+li.dataset.row][1]];
     narrow();

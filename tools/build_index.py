@@ -6,7 +6,7 @@ API requests per wiki (see crawl_audio.py), which is fine offline and hopeless i
     python tools/build_index.py            # all sources, using tools/.cache
     python tools/build_index.py lol dd     # just these
     python tools/build_index.py lol-fr     # League in one other language (see sources_lol.LANGS)
-    python tools/build_index.py saved      # after editing tools/saved.json; a few requests
+    python tools/build_index.py custom     # after editing tools/custom.json; a few requests
 
 Columns are interned into side tables and rows are arrays, because the same champion, skin,
 category and quote repeat thousands of times and the whole file is downloaded by the app.
@@ -24,12 +24,12 @@ sys.path.insert(0, HERE)
 
 from cache import cache                                            # noqa: E402
 from crawl_audio import load as load_audio                         # noqa: E402
+import sources_custom                                              # noqa: E402
 import sources_dd                                                  # noqa: E402
 import sources_fh                                                  # noqa: E402
 import sources_lol                                                 # noqa: E402
 import sources_mh                                                  # noqa: E402
 import sources_ow                                                  # noqa: E402
-import sources_saved                                               # noqa: E402
 import sources_sc2                                                 # noqa: E402
 import sources_wc3                                                 # noqa: E402
 
@@ -62,9 +62,9 @@ SOURCES = {
             'group_label': 'Character', 'skin_label': 'Faction', 'build': sources_fh.build},
     'mh':  {'name': 'Mordhau', 'host': sources_mh.HOST,
             'group_label': 'Voice', 'skin_label': 'Actor', 'build': sources_mh.build},
-    # hand-picked links from anywhere, tools/saved.json; no host of its own to crawl
-    'saved': {'name': 'Saved', 'host': None,
-              'group_label': 'Game', 'skin_label': 'Character', 'build': sources_saved.build},
+    # hand-picked links from anywhere, tools/custom.json; no host of its own to crawl
+    'custom': {'name': 'Custom', 'host': None,
+               'group_label': 'Game', 'skin_label': 'Character', 'build': sources_custom.build},
 }
 
 
@@ -110,7 +110,7 @@ def build(sid):
     out, missing, seen, base = [], 0, set(), None
     for r in rows:
         if r.get('page'):
-            # a saved clip comes from wherever it lives, so it carries its whole url where the
+            # a custom clip comes from wherever it lives, so it carries its whole url where the
             # others carry a hash, and the link to paste in chat after that
             out.append([r['file'], groups(r['group']), skins(r['skin']), cats(r['cat']),
                         subs(r['sub']), texts(r['text']), cdn_url(r['url']), r['page']])

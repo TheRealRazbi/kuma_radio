@@ -167,13 +167,13 @@ champion or a character and browse everything they say.
 | StarCraft II | 3,977 | 3,977 | unit, race, category |
 | For Honor | 37 | 36 | character, faction, category |
 | Mordhau | 842 | 835 | voice, actor, voice command |
-| Saved | 2 | 2 | game, character, category |
+| Custom | 2 | 2 | game, character, category |
 
-**Saved is a hand-picked list** for games not worth indexing whole — the Hearthstone pack
+**Custom is a hand-picked list** for games not worth indexing whole — the Hearthstone pack
 opening's "Wooah, Legendary!", SI:7 Agent's "Heh, this guy's toast." It lives in
-`tools/saved.json`, one entry per clip, and holds links only, never audio: a wiki `File:` page
+`tools/custom.json`, one entry per clip, and holds links only, never audio: a wiki `File:` page
 is looked up for its file and pasted in chat as is, and any other link (a `sounds/` file, a
-direct audio url) is used as given. Add an entry, then `python tools/build_index.py saved`.
+direct audio url) is used as given. Add an entry, then `python tools/build_index.py custom`.
 
 **Overwatch is the tidiest of the big ones.** Every hero, map and mission has a `/Quotes` page,
 and those pages are tables with the line in one column and the clip in the next, so all but a
@@ -218,6 +218,12 @@ Spanish, Young) have their words written up but no clips uploaded, so they aren'
 page that gains clips is picked up on the next rebuild. Every clip was checked against speech
 recognition once, and the two the wiki pairs with the wrong words are corrected in
 `tools/sources_mh.py`. Foppish's seven laughs have no words.
+
+**Saved is your own list.** The ☆ next to any clip, in any game, keeps it in the *Saved* tab,
+where it can be searched, filtered by game and character, played and copied like any other.
+There's no server behind the page, so the list lives in the browser that made it — each viewer
+has their own, it doesn't follow you to another browser or device, and clearing site data
+clears it. Custom is the list everyone gets; Saved is the one only you see.
 
 Details worth knowing:
 
