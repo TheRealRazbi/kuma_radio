@@ -117,6 +117,18 @@
    "built": "2026-09-25"
   },
   {
+   "id": "fh",
+   "name": "For Honor",
+   "wiki": "forhonor.fandom.com",
+   "family": "fh",
+   "lang": "",
+   "clips": 37,
+   "groups": 3,
+   "quotes": 36,
+   "bytes": 3598,
+   "built": "2026-10-02"
+  },
+  {
    "id": "mh",
    "name": "Mordhau",
    "wiki": "mordhau.fandom.com",

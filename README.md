@@ -83,8 +83,10 @@ raising it rescues that sound rather than needing it played again.
 Links that work:
 
 - a **`File:` page on any Fandom wiki** — the file page, not the article. Tested on the Darkest
-  Dungeon, League of Legends, Mordhau, Overwatch, StarCraft and Warcraft wikis:
+  Dungeon, For Honor, League of Legends, Mordhau, Overwatch, StarCraft and Warcraft
+  wikis:
   - `https://darkestdungeon.fandom.com/wiki/File:Affliction_abusive.ogg`
+  - `https://forhonor.fandom.com/wiki/File:Tenebris.mp3`
   - `https://leagueoflegends.fandom.com/wiki/File:Ahri_Ban.ogg`
   - `https://mordhau.fandom.com/wiki/File:Reginald_Battlecry1.WAV`
   - `https://overwatch.fandom.com/wiki/File:D.Va_-_Nerf_this.ogg`
@@ -163,6 +165,7 @@ champion or a character and browse everything they say.
 | Darkest Dungeon 1 & 2 | 821 | 622 | character, game, category |
 | Warcraft III | 2,233 | 2,231 | unit, campaign, response type |
 | StarCraft II | 3,977 | 3,977 | unit, race, category |
+| For Honor | 37 | 36 | character, faction, category |
 | Mordhau | 842 | 835 | voice, actor, voice command |
 | Saved | 2 | 2 | game, character, category |
 
@@ -199,6 +202,14 @@ three races across Versus, the campaigns and Co-op, and the section plus any var
 female Ghost, Tychus in the Odin) is shown next to each clip. The wiki's campaign and Co-op
 mission transcripts have no clips attached, so story dialogue isn't in here.
 
+**For Honor is everything its wiki has, which isn't much.** The For Honor wiki hosts 37 clips
+and its language wikis none, so the hero battle cries people know the game for mostly aren't
+here. What is: Apollyon's 30 taunts from the campaign's boss fight, with the words from her
+article's list of voice lines, and her death sounds; four of the Black Prior's Latin battle
+cries with their translations, "Tenebris!" among them; and two recitations of *The Tale of the
+Heike* by the Kyoshin, which no page mentions and were identified by ear. A clip added to a
+hero's Quotes section is picked up on the next rebuild.
+
 **Mordhau is the voice wheel, for 8 of its 14 voices.** The Mordhau wiki gives each voice a
 page listing its lines by the command that says them — Charge, Help, Insult, Respect and the
 rest — with the clips beside the words, so the category box is the voice command: Foppish's
@@ -215,8 +226,8 @@ Details worth knowing:
 - **League opens on the Original skin**, because a skin with its own voice-over re-records most of
   the base lines — Lulu's 117 clips are 40 lines said three times over. Switch the skin box to
   *every skin* to see the alternates; the choice sticks as you move between champions. Darkest
-  Dungeon, Overwatch, StarCraft II, Warcraft III and Mordhau have no Original, so they open
-  unfiltered.
+  Dungeon, Overwatch, StarCraft II, Warcraft III, For Honor and Mordhau have no Original,
+  so they open unfiltered.
 - **League comes in other languages** — French, Spanish, Polish, Brazilian Portuguese and
   Czech — from a language box next to the search once League is picked. Each language wiki
   uploads its own recordings, so coverage is whatever that wiki got round to: Polish has nearly
@@ -242,8 +253,8 @@ when a wiki gains content:
 python tools/build_index.py
 ```
 
-Or name the sources to rebuild — `lol`, `ow`, `dd`, `wc3`, `mh`, and `lol-fr`, `lol-es`, `lol-pl`,
-`lol-pt-br`, `lol-cs` for League's language wikis (listed in `tools/sources_lol.py`).
+Or name the sources to rebuild — `lol`, `ow`, `dd`, `wc3`, `sc2`, `fh`, `mh`, and `lol-fr`,
+`lol-es`, `lol-pl`, `lol-pt-br`, `lol-cs` for League's language wikis (listed in `tools/sources_lol.py`).
 
 Standard library only, and a full run takes half an hour or so. It has to page through *every*
 image on each wiki — `filetype:audio` search returns jpgs on these wikis and MIME filtering is
@@ -365,9 +376,9 @@ kuma radio was created under Riot Games' "Legal Jibber Jabber" policy using asse
 Games. Riot Games does not endorse or sponsor this project.
 
 Warcraft III, Overwatch and StarCraft II audio are the property of Blizzard Entertainment;
-Darkest Dungeon audio is the property of Red Hook Studios; Mordhau audio is the property
-of Triternion. This project is unaffiliated with,
-and unendorsed by, any of them.
+Darkest Dungeon audio is the property of Red Hook Studios; For Honor audio is the property of
+Ubisoft; Mordhau audio is the property of Triternion. This project is unaffiliated with, and
+unendorsed by, any of them.
 
 ## Not included
 
