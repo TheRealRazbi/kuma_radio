@@ -104,7 +104,8 @@
     kuma radio was created under Riot Games' "Legal Jibber Jabber" policy using assets owned by
     Riot Games. Riot Games does not endorse or sponsor this project. Warcraft III, Overwatch,
     StarCraft II and Hearthstone audio are the property of Blizzard Entertainment; Darkest
-    Dungeon audio is the property of Red Hook Studios.
+    Dungeon audio is the property of Red Hook Studios; Mordhau audio is the property of
+    Triternion.
     This project is unaffiliated with all of them.
   </p>
 </footer>
@@ -184,8 +185,8 @@ function fill(sel, values, all, want) {
 //
 // Skin opens on Original, because a skin with its own voice-over re-records most of the base
 // lines: Lulu's 117 clips are 40 lines said three times over. Sources with no Original at all
-// -- Overwatch, Darkest Dungeon, StarCraft II, Warcraft III -- have nothing to prefer and
-// open unfiltered.
+// -- Overwatch, Darkest Dungeon, StarCraft II, Warcraft III, Mordhau -- have nothing to
+// prefer and open unfiltered.
 function narrow() {
   const gi = at(doc.groups, $('group').value);
   const skins = new Set(), cats = new Set();
@@ -337,7 +338,8 @@ function saveState() {
   p.set('s', doc.id);
   if ($('group').value) p.set('g', $('group').value);
   // an empty skin box is only worth recording where it overrides the Original default,
-  // which keeps "k=" out of Overwatch, Darkest Dungeon, StarCraft II and Warcraft III links
+  // which keeps "k=" out of Overwatch, Darkest Dungeon, StarCraft II, Warcraft III
+  // and Mordhau links
   if ($('skin').value || doc.skins.includes('Original')) p.set('k', $('skin').value);
   if ($('cat').value)   p.set('c', $('cat').value);
   if ($('q').value)     p.set('q', $('q').value);

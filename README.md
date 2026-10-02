@@ -83,9 +83,10 @@ raising it rescues that sound rather than needing it played again.
 Links that work:
 
 - a **`File:` page on any Fandom wiki** — the file page, not the article. Tested on the Darkest
-  Dungeon, League of Legends, Overwatch, StarCraft and Warcraft wikis:
+  Dungeon, League of Legends, Mordhau, Overwatch, StarCraft and Warcraft wikis:
   - `https://darkestdungeon.fandom.com/wiki/File:Affliction_abusive.ogg`
   - `https://leagueoflegends.fandom.com/wiki/File:Ahri_Ban.ogg`
+  - `https://mordhau.fandom.com/wiki/File:Reginald_Battlecry1.WAV`
   - `https://overwatch.fandom.com/wiki/File:D.Va_-_Nerf_this.ogg`
   - `https://starcraft.fandom.com/wiki/File:Marine_What00.ogg`
   - `https://warcraft.fandom.com/wiki/File:GhoulDinner.wav`
@@ -162,6 +163,7 @@ champion or a character and browse everything they say.
 | Darkest Dungeon 1 & 2 | 821 | 622 | character, game, category |
 | Warcraft III | 2,233 | 2,231 | unit, campaign, response type |
 | StarCraft II | 3,977 | 3,977 | unit, race, category |
+| Mordhau | 842 | 835 | voice, actor, voice command |
 | Saved | 2 | 2 | game, character, category |
 
 **Saved is a hand-picked list** for games not worth indexing whole — the Hearthstone pack
@@ -197,6 +199,15 @@ three races across Versus, the campaigns and Co-op, and the section plus any var
 female Ghost, Tychus in the Odin) is shown next to each clip. The wiki's campaign and Co-op
 mission transcripts have no clips attached, so story dialogue isn't in here.
 
+**Mordhau is the voice wheel, for 8 of its 14 voices.** The Mordhau wiki gives each voice a
+page listing its lines by the command that says them — Charge, Help, Insult, Respect and the
+rest — with the clips beside the words, so the category box is the voice command: Foppish's
+"Oh, youuu bastard" is under Friendly. The other six voices (Knight, Plain, Raider, Slavic,
+Spanish, Young) have their words written up but no clips uploaded, so they aren't here yet; a
+page that gains clips is picked up on the next rebuild. Every clip was checked against speech
+recognition once, and the two the wiki pairs with the wrong words are corrected in
+`tools/sources_mh.py`. Foppish's seven laughs have no words.
+
 Details worth knowing:
 
 - The **command** box changes the `!sfx` prefix if the channel uses a different one, and **copy the
@@ -204,7 +215,7 @@ Details worth knowing:
 - **League opens on the Original skin**, because a skin with its own voice-over re-records most of
   the base lines — Lulu's 117 clips are 40 lines said three times over. Switch the skin box to
   *every skin* to see the alternates; the choice sticks as you move between champions. Darkest
-  Dungeon, Overwatch, StarCraft II and Warcraft III have no Original, so they open
+  Dungeon, Overwatch, StarCraft II, Warcraft III and Mordhau have no Original, so they open
   unfiltered.
 - **League comes in other languages** — French, Spanish, Polish, Brazilian Portuguese and
   Czech — from a language box next to the search once League is picked. Each language wiki
@@ -231,7 +242,7 @@ when a wiki gains content:
 python tools/build_index.py
 ```
 
-Or name the sources to rebuild — `lol`, `ow`, `dd`, `wc3`, and `lol-fr`, `lol-es`, `lol-pl`,
+Or name the sources to rebuild — `lol`, `ow`, `dd`, `wc3`, `mh`, and `lol-fr`, `lol-es`, `lol-pl`,
 `lol-pt-br`, `lol-cs` for League's language wikis (listed in `tools/sources_lol.py`).
 
 Standard library only, and a full run takes half an hour or so. It has to page through *every*
@@ -354,7 +365,8 @@ kuma radio was created under Riot Games' "Legal Jibber Jabber" policy using asse
 Games. Riot Games does not endorse or sponsor this project.
 
 Warcraft III, Overwatch and StarCraft II audio are the property of Blizzard Entertainment;
-Darkest Dungeon audio is the property of Red Hook Studios. This project is unaffiliated with,
+Darkest Dungeon audio is the property of Red Hook Studios; Mordhau audio is the property
+of Triternion. This project is unaffiliated with,
 and unendorsed by, any of them.
 
 ## Not included

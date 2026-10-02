@@ -26,6 +26,7 @@ from cache import cache                                            # noqa: E402
 from crawl_audio import load as load_audio                         # noqa: E402
 import sources_dd                                                  # noqa: E402
 import sources_lol                                                 # noqa: E402
+import sources_mh                                                  # noqa: E402
 import sources_ow                                                  # noqa: E402
 import sources_saved                                               # noqa: E402
 import sources_sc2                                                 # noqa: E402
@@ -56,6 +57,8 @@ SOURCES = {
             'group_label': 'Unit', 'skin_label': 'Kind', 'build': sources_wc3.build},
     'sc2': {'name': 'StarCraft II', 'host': sources_sc2.HOST,
             'group_label': 'Unit', 'skin_label': 'Race', 'build': sources_sc2.build},
+    'mh':  {'name': 'Mordhau', 'host': sources_mh.HOST,
+            'group_label': 'Voice', 'skin_label': 'Actor', 'build': sources_mh.build},
     # hand-picked links from anywhere, tools/saved.json; no host of its own to crawl
     'saved': {'name': 'Saved', 'host': None,
               'group_label': 'Game', 'skin_label': 'Character', 'build': sources_saved.build},

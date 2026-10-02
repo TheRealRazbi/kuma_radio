@@ -117,6 +117,18 @@
    "built": "2026-09-25"
   },
   {
+   "id": "mh",
+   "name": "Mordhau",
+   "wiki": "mordhau.fandom.com",
+   "family": "mh",
+   "lang": "",
+   "clips": 842,
+   "groups": 8,
+   "quotes": 835,
+   "bytes": 56352,
+   "built": "2026-10-02"
+  },
+  {
    "id": "saved",
    "name": "Saved",
    "wiki": "",
