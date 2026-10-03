@@ -4,5 +4,8 @@
   "link": "https://hearthstone.fandom.com/wiki/File:VO_EX1_134_Play_01.wav"},
  {"game": "Hearthstone", "who": "Innkeeper", "cat": "Pack opening",
   "said": "Wooah, Legendary!",
-  "link": "https://hearthstone.fandom.com/wiki/File:VO_ANNOUNCER_LEGENDARY_25.wav"}
+  "link": "https://hearthstone.fandom.com/wiki/File:VO_ANNOUNCER_LEGENDARY_25.wav"},
+ {"game": "Custom", "who": "Acolyte", "cat": "Ambient",
+  "said": "Acolyte Ambient",
+  "link": "https://therealrazbi.github.io/kuma_radio/sounds/acolyte-ambient.ogg"}
 ]

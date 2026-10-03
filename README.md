@@ -167,7 +167,7 @@ champion or a character and browse everything they say.
 | StarCraft II | 3,977 | 3,977 | unit, race, category |
 | For Honor | 37 | 36 | character, faction, category |
 | Mordhau | 842 | 835 | voice, actor, voice command |
-| Custom | 2 | 2 | game, character, category |
+| Custom | 3 | 3 | game, character, category |
 
 **Custom is a hand-picked list** for games not worth indexing whole — the Hearthstone pack
 opening's "Wooah, Legendary!", SI:7 Agent's "Heh, this guy's toast." It lives in
