@@ -5,7 +5,7 @@
  {"game": "Hearthstone", "who": "Innkeeper", "cat": "Pack opening",
   "said": "Wooah, Legendary!",
   "link": "https://hearthstone.fandom.com/wiki/File:VO_ANNOUNCER_LEGENDARY_25.wav"},
- {"game": "Custom", "who": "Acolyte", "cat": "Ambient",
+ {"game": "Warcraft III", "who": "Acolyte", "cat": "Ambient",
   "said": "Acolyte Ambient",
   "link": "https://therealrazbi.github.io/kuma_radio/sounds/acolyte-ambient.ogg"}
 ]
