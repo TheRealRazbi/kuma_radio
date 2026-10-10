@@ -82,9 +82,10 @@ raising it rescues that sound rather than needing it played again.
 
 Links that work:
 
-- a **`File:` page on any Fandom wiki** — the file page, not the article. Tested on the Darkest
-  Dungeon, For Honor, League of Legends, Mordhau, Overwatch, StarCraft and Warcraft
-  wikis:
+- a **`File:` page on any Fandom wiki** — the file page, not the article. Tested on the Apex
+  Legends, Darkest Dungeon, For Honor, League of Legends, Mordhau, Overwatch, StarCraft and
+  Warcraft wikis:
+  - `https://apexlegends.fandom.com/wiki/File:Diag_mp_wraith_glad_tauntHalloween_01_01_1p.wav`
   - `https://darkestdungeon.fandom.com/wiki/File:Affliction_abusive.ogg`
   - `https://forhonor.fandom.com/wiki/File:Tenebris.mp3`
   - `https://leagueoflegends.fandom.com/wiki/File:Ahri_Ban.ogg`
@@ -166,6 +167,7 @@ champion or a character and browse everything they say.
 | Warcraft III | 2,233 | 2,231 | unit, campaign, response type |
 | StarCraft II | 3,977 | 3,977 | unit, race, category |
 | For Honor | 37 | 36 | character, faction, category |
+| Apex Legends | 540 | 540 | legend, class, category |
 | Mordhau | 842 | 835 | voice, actor, voice command |
 | Custom | 4 | 4 | game, character, category |
 
@@ -210,6 +212,16 @@ cries with their translations, "Tenebris!" among them; and two recitations of *T
 Heike* by the Kyoshin, which no page mentions and were identified by ear. A clip added to a
 hero's Quotes section is picked up on the next rebuild.
 
+**Apex Legends is twelve legends, deepest for six.** Each legend has a voice lines page sorted
+the way the game triggers them — Character Select, Intro and Kill Quips, Gameplay, Pings,
+Lobby — with the situation beside each line, so the category box is the section and the
+situation (or the quip's rarity) shows next to the clip. The wiki writes up thousands of lines
+but has clips for only a few hundred: Bloodhound, Axle, Fuse, Mirage, Bangalore and Wraith
+have 55 to 111 each, Caustic, Crypto and Ash a handful, and Pathfinder, Gibraltar and Seer one
+to three. A line said only to another legend keeps its note, as in "[To Ash] Yes, I know." The
+wiki moved to wiki.gg in 2023, but the Fandom copy has more of the clips and is the one indexed;
+15 clips that no page mentions are left out.
+
 **Mordhau is the voice wheel, for 8 of its 14 voices.** The Mordhau wiki gives each voice a
 page listing its lines by the command that says them — Charge, Help, Insult, Respect and the
 rest — with the clips beside the words, so the category box is the voice command: Foppish's
@@ -232,8 +244,8 @@ Details worth knowing:
 - **League opens on the Original skin**, because a skin with its own voice-over re-records most of
   the base lines — Lulu's 117 clips are 40 lines said three times over. Switch the skin box to
   *every skin* to see the alternates; the choice sticks as you move between champions. Darkest
-  Dungeon, Overwatch, StarCraft II, Warcraft III, For Honor and Mordhau have no Original,
-  so they open unfiltered.
+  Dungeon, Overwatch, StarCraft II, Warcraft III, For Honor, Apex Legends and Mordhau have no
+  Original, so they open unfiltered.
 - **League comes in other languages** — French, Spanish, Polish, Brazilian Portuguese and
   Czech — from a language box next to the search once League is picked. Each language wiki
   uploads its own recordings, so coverage is whatever that wiki got round to: Polish has nearly
@@ -259,7 +271,7 @@ when a wiki gains content:
 python tools/build_index.py
 ```
 
-Or name the sources to rebuild — `lol`, `ow`, `dd`, `wc3`, `sc2`, `fh`, `mh`, and `lol-fr`,
+Or name the sources to rebuild — `lol`, `ow`, `dd`, `wc3`, `sc2`, `fh`, `apex`, `mh`, and `lol-fr`,
 `lol-es`, `lol-pl`, `lol-pt-br`, `lol-cs` for League's language wikis (listed in `tools/sources_lol.py`).
 
 Standard library only, and a full run takes half an hour or so. It has to page through *every*
@@ -383,8 +395,9 @@ Games. Riot Games does not endorse or sponsor this project.
 
 Warcraft III, Overwatch and StarCraft II audio are the property of Blizzard Entertainment;
 Darkest Dungeon audio is the property of Red Hook Studios; For Honor audio is the property of
-Ubisoft; Mordhau audio is the property of Triternion. This project is unaffiliated with, and
-unendorsed by, any of them.
+Ubisoft; Apex Legends audio is the property of Respawn Entertainment and Electronic Arts;
+Mordhau audio is the property of Triternion. This project is unaffiliated with, and unendorsed
+by, any of them.
 
 ## Not included
 

@@ -109,7 +109,8 @@
     Riot Games. Riot Games does not endorse or sponsor this project. Warcraft III, Overwatch,
     StarCraft II and Hearthstone audio are the property of Blizzard Entertainment; Darkest
     Dungeon audio is the property of Red Hook Studios; For Honor audio is the property of
-    Ubisoft; Mordhau audio is the property of Triternion.
+    Ubisoft; Apex Legends audio is the property of Respawn Entertainment and Electronic Arts;
+    Mordhau audio is the property of Triternion.
     This project is unaffiliated with all of them.
   </p>
 </footer>
@@ -189,8 +190,8 @@ function fill(sel, values, all, want) {
 //
 // Skin opens on Original, because a skin with its own voice-over re-records most of the base
 // lines: Lulu's 117 clips are 40 lines said three times over. Sources with no Original at all
-// -- Overwatch, Darkest Dungeon, StarCraft II, Warcraft III, For Honor, Mordhau -- have
-// nothing to prefer and open unfiltered.
+// -- Overwatch, Darkest Dungeon, StarCraft II, Warcraft III, For Honor, Apex Legends,
+// Mordhau -- have nothing to prefer and open unfiltered.
 function narrow() {
   const gi = at(doc.groups, $('group').value);
   const skins = new Set(), cats = new Set();
@@ -434,8 +435,8 @@ function saveState() {
   p.set('s', doc.id);
   if ($('group').value) p.set('g', $('group').value);
   // an empty skin box is only worth recording where it overrides the Original default,
-  // which keeps "k=" out of Overwatch, Darkest Dungeon, StarCraft II, Warcraft III, For Honor
-  // and Mordhau links
+  // which keeps "k=" out of Overwatch, Darkest Dungeon, StarCraft II, Warcraft III, For Honor,
+  // Apex Legends and Mordhau links
   if ($('skin').value || doc.skins.includes('Original')) p.set('k', $('skin').value);
   if ($('cat').value)   p.set('c', $('cat').value);
   if ($('q').value)     p.set('q', $('q').value);

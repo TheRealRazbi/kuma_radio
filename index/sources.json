@@ -129,6 +129,18 @@
    "built": "2026-10-02"
   },
   {
+   "id": "apex",
+   "name": "Apex Legends",
+   "wiki": "apexlegends.fandom.com",
+   "family": "apex",
+   "lang": "",
+   "clips": 540,
+   "groups": 12,
+   "quotes": 540,
+   "bytes": 63117,
+   "built": "2026-10-10"
+  },
+  {
    "id": "mh",
    "name": "Mordhau",
    "wiki": "mordhau.fandom.com",
