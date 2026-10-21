@@ -169,7 +169,7 @@ champion or a character and browse everything they say.
 | For Honor | 37 | 36 | character, faction, category |
 | Apex Legends | 540 | 540 | legend, class, category |
 | Mordhau | 842 | 835 | voice, actor, voice command |
-| Custom | 4 | 4 | game, character, category |
+| Custom | 5 | 5 | game, character, category |
 
 **Custom is a hand-picked list** for games not worth indexing whole — the Hearthstone pack
 opening's "Wooah, Legendary!", SI:7 Agent's "Heh, this guy's toast." It lives in

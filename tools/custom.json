@@ -10,5 +10,8 @@
   "link": "https://hearthstone.fandom.com/wiki/File:VO_ANNOUNCER_FOIL_L_32.wav"},
  {"game": "Warcraft III", "who": "Acolyte", "cat": "Ambient",
   "said": "Acolyte Ambient",
-  "link": "https://therealrazbi.github.io/kuma_radio/sounds/acolyte-ambient.ogg"}
+  "link": "https://therealrazbi.github.io/kuma_radio/sounds/acolyte-ambient.ogg"},
+ {"game": "Apex Legends", "who": "Bangalore", "cat": "Smoke Launcher fired",
+  "said": "Poppin' the chimney!",
+  "link": "https://therealrazbi.github.io/kuma_radio/sounds/bangalore-poppin-the-chimney.ogg"}
 ]
