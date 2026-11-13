@@ -31,6 +31,7 @@ import sources_fh                                                  # noqa: E402
 import sources_lol                                                 # noqa: E402
 import sources_mh                                                  # noqa: E402
 import sources_ow                                                  # noqa: E402
+import sources_pd2                                                 # noqa: E402
 import sources_sc2                                                 # noqa: E402
 import sources_wc3                                                 # noqa: E402
 
@@ -65,6 +66,9 @@ SOURCES = {
              'group_label': 'Legend', 'skin_label': 'Class', 'build': sources_apex.build},
     'mh':  {'name': 'Mordhau', 'host': sources_mh.HOST,
             'group_label': 'Voice', 'skin_label': 'Actor', 'build': sources_mh.build},
+    # cut from a video by rip_payday2.py into sounds/payday2/; no wiki to crawl
+    'pd2': {'name': 'Payday 2', 'host': None,
+            'group_label': 'Heister', 'skin_label': 'Actor', 'build': sources_pd2.build},
     # hand-picked links from anywhere, tools/custom.json; no host of its own to crawl
     'custom': {'name': 'Custom', 'host': None,
                'group_label': 'Game', 'skin_label': 'Character', 'build': sources_custom.build},

@@ -153,6 +153,18 @@
    "built": "2026-10-02"
   },
   {
+   "id": "pd2",
+   "name": "Payday 2",
+   "wiki": "",
+   "family": "pd2",
+   "lang": "",
+   "clips": 33,
+   "groups": 1,
+   "quotes": 33,
+   "bytes": 10589,
+   "built": "2026-11-13"
+  },
+  {
    "id": "custom",
    "name": "Custom",
    "wiki": "",

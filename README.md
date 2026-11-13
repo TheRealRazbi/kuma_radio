@@ -169,6 +169,7 @@ champion or a character and browse everything they say.
 | For Honor | 37 | 36 | character, faction, category |
 | Apex Legends | 540 | 540 | legend, class, category |
 | Mordhau | 842 | 835 | voice, actor, voice command |
+| Payday 2 | 33 | 33 | heister, actor, category |
 | Custom | 5 | 5 | game, character, category |
 
 **Custom is a hand-picked list** for games not worth indexing whole — the Hearthstone pack
@@ -231,6 +232,15 @@ page that gains clips is picked up on the next rebuild. Every clip was checked a
 recognition once, and the two the wiki pairs with the wrong words are corrected in
 `tools/sources_mh.py`. Foppish's seven laughs have no words.
 
+**Payday 2 is Jimmy answering the pager.** No wiki hosts these, so they were cut out of a
+YouTube compilation of them (11Jake's *Payday 2 Jimmy Pager Voice lines*) into
+`sounds/payday2/`, one line a file: "Sorry, Control. Leroy just barged in here and scared the
+holy shit out of me." The lines run into each other with no more pause between them than inside
+them, so where each starts and ends was picked by hand from a speech-recognition transcript and
+is kept in `tools/payday2.json` with the words; the pager's beep and the dispatcher between
+them are left out, and so are the six lines the video plays twice. `tools/rip_payday2.py`
+redoes the cutting from that list, and `python tools/build_index.py pd2` the index.
+
 **Saved is your own list.** The ☆ next to any clip, in any game, keeps it in the *Saved* tab,
 where it can be searched, filtered by game and character, played and copied like any other.
 There's no server behind the page, so the list lives in the browser that made it — each viewer
@@ -244,8 +254,8 @@ Details worth knowing:
 - **League opens on the Original skin**, because a skin with its own voice-over re-records most of
   the base lines — Lulu's 117 clips are 40 lines said three times over. Switch the skin box to
   *every skin* to see the alternates; the choice sticks as you move between champions. Darkest
-  Dungeon, Overwatch, StarCraft II, Warcraft III, For Honor, Apex Legends and Mordhau have no
-  Original, so they open unfiltered.
+  Dungeon, Overwatch, StarCraft II, Warcraft III, For Honor, Apex Legends, Mordhau and Payday 2
+  have no Original, so they open unfiltered.
 - **League comes in other languages** — French, Spanish, Polish, Brazilian Portuguese and
   Czech — from a language box next to the search once League is picked. Each language wiki
   uploads its own recordings, so coverage is whatever that wiki got round to: Polish has nearly
@@ -387,7 +397,8 @@ The code in this repository — the overlay, the finder, and the indexer — is 
 
 **That licence covers the code only.** It does not cover the audio, which this project never
 copies: `index/*.json` holds names, quotes and links, and both pages stream the files from the
-wikis that host them. The clips themselves remain the property of their respective owners, and
+wikis that host them. The exception is `sounds/`, for clips no wiki has, such as Payday 2's
+pager lines. The clips themselves remain the property of their respective owners, and
 the transcripts come from the wikis under their own licences.
 
 kuma radio was created under Riot Games' "Legal Jibber Jabber" policy using assets owned by Riot
@@ -396,7 +407,8 @@ Games. Riot Games does not endorse or sponsor this project.
 Warcraft III, Overwatch and StarCraft II audio are the property of Blizzard Entertainment;
 Darkest Dungeon audio is the property of Red Hook Studios; For Honor audio is the property of
 Ubisoft; Apex Legends audio is the property of Respawn Entertainment and Electronic Arts;
-Mordhau audio is the property of Triternion. This project is unaffiliated with, and unendorsed
+Mordhau audio is the property of Triternion; Payday 2 audio is the property of Starbreeze
+Studios. This project is unaffiliated with, and unendorsed
 by, any of them.
 
 ## Not included
