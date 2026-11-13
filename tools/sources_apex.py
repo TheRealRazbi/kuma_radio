@@ -21,7 +21,15 @@ rebuild. Two of Bloodhound's Trials clips are on the Trials page and not on his,
 page is read too. The wiki moved to apexlegends.wiki.gg in 2023; the Fandom copy it left
 behind has the same pages and more of the clips (555 to 452), and is the one the app's CDN
 scheme fits.
+
+The rest of a legend's lines come from the game itself: rip_apex.py copies them into
+sounds/apex/ and writes what each one says to apex_heard.json. Those have no voice page to
+say where they belong, so the clip's own name does, diag_mp_bangalore_ping_markerNo_calm_
+condLoba_02_01_1p being a ping, "Marker no (calm)", said to Loba. A line the wiki has a clip
+for keeps the wiki's.
 """
+
+import json
 
 import os
 import re
@@ -50,6 +58,21 @@ LEAD = re.compile(r'^(\[(?:[^\[\]]|\[\[[^\[\]]*\]\])*\])\s*:?\s*(.*)$', re.S)
 # the pages call the same section by more than one name
 SECTION = {'character selection': 'Character Select', 'intro': 'Intro Quip',
            'kills': 'Kill Quip'}
+
+HEARD = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'apex_heard.json')
+SOUNDS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'sounds', 'apex')
+PAGES = 'https://therealrazbi.github.io/kuma_radio/sounds/apex/'
+
+# the game's clip names: diag_mp_<legend>_<kind>_<event...>_<take numbers>_<1p|3p|3p_L2>
+GAME_CLIP = re.compile(r'^diag_mp_([a-z0-9]+)_([a-z]+)_(.*?)_(?:1p|3p(?:_L2)?)$', re.I)
+TAKE_NO = re.compile(r'^(\d+[a-z]?|qw|sub)$')
+MOOD = {'calm': 'calm', 'urgent': 'urgent', 'calmFar': 'calm, far', 'urgentFar': 'urgent, far',
+        'far': 'far', 'close': 'close', 'solo': 'solo'}
+KIND = {'bc': 'Gameplay', 'ping': 'Pings', 'effort': 'Efforts', 'snapback': 'Snapback'}
+# camelCase, and a run of capitals before a word: OLUniversityStatues, circleMovesNag10Sec
+# the class of a legend ripped from the game that has no voice page on the wiki to say it
+CLASSES = {'Octane': 'Skirmisher'}
+WORD_BREAK = re.compile(r'(?<=[a-z])(?=[A-Z0-9])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[0-9])(?=[A-Za-z])')
 
 # page -> (legend, section), for the pages besides the voice pages that a clip is only on.
 # Their clips sit in a table, the thing examined in one cell and the words in the next.
@@ -159,6 +182,71 @@ def legend_class(text):
     return clean(m.group(1)) if m else ''
 
 
+def words(s):
+    """'Another squad attacking us' from anotherSquadAttackingUs; OL and R301 stay as they are."""
+    out = [w if len(w) > 1 and w.isupper() or any(c.isdigit() for c in w) else w.lower()
+           for w in WORD_BREAK.sub(' ', s).split()]
+    s = ' '.join(out)
+    return s[:1].upper() + s[1:]
+
+
+def section_of(kind, event):
+    if kind == 'glad':
+        if event.startswith(('intro', 'seasonOpen')):
+            return 'Intro Quip'
+        if event.startswith('taunt'):
+            return 'Kill Quip'
+        return 'Ranked' if event.startswith('rank') else 'Finisher'
+    if kind == 'menu':
+        return 'Character Select' if event == 'selectReady' else 'Lobby'
+    return KIND.get(kind, kind.capitalize())
+
+
+def game_line(stem):
+    """-> (legend token, section, situation, note) for one of the game's clip names, or None."""
+    m = GAME_CLIP.match(stem)
+    if not m:
+        return None
+    token, kind, rest = m.groups()
+    parts = [p for p in rest.split('_') if p and not TAKE_NO.match(p)]
+    to = [p[4:] for p in parts if p.startswith('cond') and p != 'condGenderNeutral']
+    moods = [MOOD[p] for p in parts if p in MOOD]
+    event = [p for p in parts if p not in MOOD and not p.startswith('cond')]
+    cat = section_of(kind, ''.join(event[:1]))
+    if cat in ('Intro Quip', 'Kill Quip') and event:
+        # introSeq and taunt are the plain ones; introHalloween, tauntWinter the event ones
+        event[0] = re.sub(r'^(introSeq|intro|taunt)', '', event[0])
+    # the wiki leaves Character Select's situation empty, and there is only the one
+    sit = '' if cat == 'Character Select' else words(' '.join(event))
+    if moods:
+        sit += ' (%s)' % ', '.join(moods)
+    return token, cat, sit, ''.join('[To %s] ' % t for t in to)
+
+
+def game_rows(legends, wiki_files):
+    """The clips rip_apex.py copied out of the game, less the ones the wiki has."""
+    if not os.path.exists(HEARD):
+        return []
+    with open(HEARD, encoding='utf-8') as f:
+        heard = json.load(f)
+    take = re.compile(r'_(?:1p|3p(?:_L2)?)$', re.I)
+    have = {take.sub('', f.rsplit('.', 1)[0]).lower() for f in wiki_files}
+    by_token = {re.sub(r'[^a-z0-9]', '', l.lower()): l for l in legends}
+    rows = []
+    for stem, h in sorted(heard.items()):
+        line = game_line(stem)
+        if (not line or take.sub('', stem).lower() in have
+                or not os.path.exists(os.path.join(SOUNDS, stem + '.ogg'))):
+            continue
+        token, cat, sub, note = line
+        legend = by_token.get(token, token.capitalize())
+        rows.append({'file': stem + '.ogg', 'group': legend,
+                     'skin': legends.get(legend) or CLASSES.get(legend, ''),
+                     'cat': cat, 'sub': sub, 'text': (note + h['text']).strip(),
+                     'url': PAGES + stem + '.ogg', 'page': PAGES + stem + '.ogg'})
+    return rows
+
+
 def build(cache):
     text = cache('apex-wikitext', pages)
     rows = {}
@@ -179,4 +267,6 @@ def build(cache):
     names = {a['name'] for a in load_audio(HOST)}
     for f in sorted(names - set(rows)):
         print('  ! %s is on no voice page' % f, flush=True)
-    return [dict(r, file=f) for f, r in rows.items()]
+    legends = {VOICE_LINES.match(t).group(1): legend_class(text.get(VOICE_LINES.match(t).group(1)))
+               for t in text if VOICE_LINES.match(t)}
+    return [dict(r, file=f) for f, r in rows.items()] + game_rows(legends, rows)

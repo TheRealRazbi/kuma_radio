@@ -167,7 +167,7 @@ champion or a character and browse everything they say.
 | Warcraft III | 2,233 | 2,231 | unit, campaign, response type |
 | StarCraft II | 3,977 | 3,977 | unit, race, category |
 | For Honor | 37 | 36 | character, faction, category |
-| Apex Legends | 540 | 540 | legend, class, category |
+| Apex Legends | 5,472 | 5,472 | legend, class, category |
 | Mordhau | 842 | 835 | voice, actor, voice command |
 | Payday 2 | 33 | 33 | heister, actor, category |
 | Custom | 5 | 5 | game, character, category |
@@ -222,6 +222,12 @@ have 55 to 111 each, Caustic, Crypto and Ash a handful, and Pathfinder, Gibralta
 to three. A line said only to another legend keeps its note, as in "[To Ash] Yes, I know." The
 wiki moved to wiki.gg in 2023, but the Fandom copy has more of the clips and is the one indexed;
 15 clips that no page mentions are left out.
+
+Bangalore has all of hers, not just the wiki's: 4,932 more lines copied out of the game's own
+sound bank into `sounds/apex/`, every ping, callout, quip and finisher. Those have no voice page
+to file them, so the game's clip name does — `diag_mp_bangalore_ping_foundShotgunMag_urgent_…`
+is under Pings as "Found shotgun mag (urgent)" — and their words are speech recognition, so
+expect the odd misheard one. A line the wiki has a clip for keeps the wiki's.
 
 **Mordhau is the voice wheel, for 8 of its 14 voices.** The Mordhau wiki gives each voice a
 page listing its lines by the command that says them — Charge, Help, Insult, Respect and the
@@ -294,7 +300,9 @@ once is enough to trip it, so let one finish before starting the next.
 The one step that isn't stdlib is `tools/transcribe_wc3.py`, which rewrites
 `tools/wc3_heard.json` and needs `faster-whisper` in a venv of its own (setup in its docstring).
 The builder only reads the json, so this is only worth rerunning when the Warcraft quote pages
-change which clips they cover.
+change which clips they cover. `tools/rip_apex.py` is the same for Apex, plus a local install
+of the game: it copies a legend's lines into `sounds/apex/` and their words into
+`tools/apex_heard.json`.
 
 ## Custom sounds
 
