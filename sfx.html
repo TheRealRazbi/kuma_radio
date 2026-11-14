@@ -62,6 +62,28 @@
     border-radius:6px;padding:6px 9px;cursor:pointer;font-size:14px;line-height:1.2}
   .mark:hover{border-color:var(--accent);color:var(--ink)}
   .mark.on{color:var(--star);border-color:var(--star)}
+  .dl,.extra{flex:0 0 auto;background:none;border:1px solid var(--line);color:var(--dim);
+    border-radius:6px;padding:6px 9px;cursor:pointer;font-size:14px;line-height:1.2}
+  .dl:hover,.extra:hover,.other.open .extra{border-color:var(--accent);color:var(--ink)}
+  .dl.done{border-color:var(--ok);color:var(--ok)}
+  .dl.fail{border-color:var(--err);color:var(--err)}
+  .other{position:relative;flex:0 0 auto}
+  .tray{display:none;position:absolute;z-index:4;right:0;top:calc(100% + 4px);min-width:130px;
+    flex-direction:column;gap:4px;padding:6px;background:var(--panel);border:1px solid var(--line);
+    border-radius:8px;box-shadow:0 6px 18px #0009}
+  .other.open .tray{display:flex}
+  .tray button{width:100%;text-align:left;white-space:nowrap}
+  .opts{position:relative}
+  .opts summary{list-style:none;cursor:pointer;border:1px solid var(--line);border-radius:6px;
+    padding:3px 8px}
+  .opts summary::-webkit-details-marker{display:none}
+  .opts summary:hover,.opts[open] summary{color:var(--ink);border-color:var(--accent)}
+  .opts .menu{position:absolute;z-index:5;left:0;top:calc(100% + 4px);min-width:230px;
+    display:flex;flex-direction:column;gap:2px;padding:6px;background:var(--panel);
+    border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px #0009}
+  .opts .menu label{padding:5px 8px;border-radius:5px;color:var(--ink)}
+  .opts .menu label:hover{background:#1e1e28}
+  .opts .menu small{color:var(--dim)}
   #more{display:none;margin:14px auto 0;padding:9px 18px}
   #note{padding:24px 0;color:var(--dim)}
   footer{max-width:960px;margin:0 auto;padding:20px;border-top:1px solid var(--line);
@@ -91,6 +113,15 @@
     <label>command <input type="text" id="prefix" value="!sfx" spellcheck="false"></label>
     <label><input type="checkbox" id="urlonly"> copy the link only</label>
     <label>preview volume <input type="range" id="vol" min="0" max="100" step="5"></label>
+    <details class="opts" id="btnopts">
+      <summary title="choose which buttons each clip shows">buttons &#9662;</summary>
+      <div class="menu">
+        <label><input type="checkbox" data-b="copy"> copy</label>
+        <label><input type="checkbox" data-b="mark"> &#9734; save</label>
+        <label><input type="checkbox" data-b="dl"> &#8595; download</label>
+        <label><input type="checkbox" data-b="other"> &#8943; other <small>— holds the hidden ones</small></label>
+      </div>
+    </details>
     <span id="built"></span>
   </div>
 
@@ -243,7 +274,37 @@ function esc(s) {
   return String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
 }
 
+// Which of a clip's buttons sit in its row; the rest go behind "other" if that is switched
+// on, and are simply gone if it isn't. Order here is the order in the row.
+const BTN_DEFAULTS = { mark: true, dl: false, copy: true, other: false };
+const BTNS = {
+  mark: () => '<button class="mark"></button>',
+  dl:   tray => '<button class="dl" title="download the clip">&#8595;' + (tray ? ' download' : '') + '</button>',
+  copy: () => '<button class="copy">copy</button>',
+};
+let btns = { ...BTN_DEFAULTS };
+
+function buttonsHtml() {
+  const keys = Object.keys(BTNS);
+  const off = keys.filter(k => !btns[k]);
+  let h = keys.filter(k => btns[k]).map(k => BTNS[k](false)).join('');
+  if (btns.other && off.length) {
+    h += '<span class="other"><button class="extra" title="other buttons">&#8943;</button>' +
+         '<div class="tray">' + off.map(k => BTNS[k](true)).join('') + '</div></span>';
+  }
+  return h;
+}
+
+// draw the same number of rows again, for when the buttons change under them
+function redraw() {
+  const n = shown;
+  shown = 0;
+  $('results').innerHTML = '';
+  do draw(); while (shown < n);
+}
+
 function draw() {
+  const buttons = buttonsHtml();
   const frag = document.createDocumentFragment();
   const end = Math.min(shown + PAGE, hits.length);
   for (; shown < end; shown++) {
@@ -261,10 +322,9 @@ function draw() {
       '<div class="meta"><b class="pick">' + esc(bits[0] || '?') + '</b>' +
         (bits.length > 1 ? ' &middot; ' + esc(bits.slice(1).join(' · ')) : '') +
         // no transcript means the file name is already the title above, don't say it twice
-        (said ? ' &middot; ' + esc(r[0]) : '') + '</div></div>' +
-      '<button class="mark"></button>' +
-      '<button class="copy">copy</button>';
-    markButton(li.querySelector('.mark'));
+        (said ? ' &middot; ' + esc(r[0]) : '') + '</div></div>' + buttons;
+    const mark = li.querySelector('.mark');
+    if (mark) markButton(mark);
     if (i === playingRow) li.classList.add('playing');
     frag.appendChild(li);
   }
@@ -338,6 +398,37 @@ async function copy(btn, text) {
   }
 }
 
+/* ---------------- download ---------------- */
+
+// A download attribute is ignored on another origin's link, so fetch the clip and save the
+// blob under its own file name. The wiki cdn and github pages both send CORS headers; if a
+// host ever stops, open the clip in a tab and let the browser's own save do it.
+async function download(btn, r) {
+  const html = btn.innerHTML;
+  const flash = ok => {
+    btn.classList.add(ok ? 'done' : 'fail');
+    setTimeout(() => { btn.classList.remove('done', 'fail'); btn.innerHTML = html; }, 1400);
+  };
+  const url = clipUrl(r);
+  btn.textContent = '…';
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(res.status);
+    const href = URL.createObjectURL(await res.blob());
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = r[0];
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(href), 30000);
+    flash(true);
+  } catch (e) {
+    window.open(url, '_blank', 'noopener');
+    flash(false);
+  }
+}
+
 /* ---------------- saved ---------------- */
 
 // Saved is this browser's own list: the star on any clip keeps it there. With no server
@@ -407,14 +498,16 @@ function toggleSaved(i) {
   storeSaved();
   // the same clip can sit under more than one category, so mark every copy of it
   for (const li of $('results').children) {
-    if (wikiUrl(doc.rows[+li.dataset.row]) === c.page) markButton(li.querySelector('.mark'));
+    const mark = li.querySelector('.mark');
+    if (mark && wikiUrl(doc.rows[+li.dataset.row]) === c.page) markButton(mark);
   }
 }
 
 function markButton(btn) {
   const on = savedSet.has(wikiUrl(doc.rows[+btn.closest('li').dataset.row]));
+  const tray = btn.closest('.tray');
   btn.classList.toggle('on', on);
-  btn.innerHTML = on ? '&#9733;' : '&#9734;';
+  btn.innerHTML = (on ? '&#9733;' : '&#9734;') + (tray ? (on ? ' saved' : ' save') : '');
   btn.title = on ? 'remove from Saved' : 'keep in Saved';
 }
 
@@ -566,6 +659,14 @@ $('results').addEventListener('click', e => {
   if (e.target.closest('.play')) { play(li); return; }
   if (e.target.closest('.copy')) { copy(e.target, commandFor(doc.rows[+li.dataset.row])); return; }
   if (e.target.closest('.mark')) { toggleSaved(+li.dataset.row); return; }
+  if (e.target.closest('.dl'))   { download(e.target.closest('.dl'), doc.rows[+li.dataset.row]); return; }
+  if (e.target.closest('.extra')) {
+    const o = e.target.closest('.other');
+    const was = o.classList.contains('open');
+    closeTrays();
+    o.classList.toggle('open', !was);
+    return;
+  }
   if (e.target.closest('.pick')) {
     $('group').value = doc.groups[doc.rows[+li.dataset.row][1]];
     narrow();
@@ -581,15 +682,38 @@ $('vol').value = prefs.vol == null ? 60 : prefs.vol;
 $('prefix').value = prefs.prefix || '!sfx';
 $('urlonly').checked = !!prefs.urlonly;
 player.volume = $('vol').value / 100;
+for (const k in BTN_DEFAULTS) {
+  if (prefs.btns && typeof prefs.btns[k] === 'boolean') btns[k] = prefs.btns[k];
+}
 
 function remember() {
   player.volume = $('vol').value / 100;
   try {
     localStorage.setItem(PREFS, JSON.stringify({
-      vol: +$('vol').value, prefix: $('prefix').value, urlonly: $('urlonly').checked }));
+      vol: +$('vol').value, prefix: $('prefix').value, urlonly: $('urlonly').checked, btns }));
   } catch (e) { /* private mode / restricted storage can throw */ }
 }
 for (const id of ['vol', 'prefix', 'urlonly']) $(id).addEventListener('input', remember);
+
+for (const box of document.querySelectorAll('#btnopts input')) {
+  box.checked = btns[box.dataset.b];
+  box.addEventListener('change', () => {
+    btns[box.dataset.b] = box.checked;
+    remember();
+    redraw();
+  });
+}
+
+function closeTrays() {
+  for (const o of document.querySelectorAll('.other.open')) o.classList.remove('open');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.other')) closeTrays();
+  if (!e.target.closest('#btnopts')) $('btnopts').open = false;
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeTrays(); $('btnopts').open = false; }
+});
 
 start().catch(e => { $('note').textContent = 'failed to start: ' + e.message; });
 </script>
